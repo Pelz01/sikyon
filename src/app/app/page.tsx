@@ -29,6 +29,7 @@ interface TreasuryItem {
   balance: string;
   blobId: string;
   txHash: string;
+  publicId?: string;
   objectId?: string;
   date: string;
   verifiedDate?: string;
@@ -57,6 +58,7 @@ const SEED_HISTORY: TreasuryItem[] = [
     balance: "$225,320,000.00 USD",
     blobId: "wal_0x8f7c9e0d1a2938afbc9e",
     txHash: "sui_0x9cfb829ed8203f198e3b",
+    publicId: "attestation-001",
     objectId: "0x9d1b7f4a8c2e6b019af5c31d8e72a449",
     date: "2026-04-01",
     verifiedDate: "2026-04-03",
@@ -74,6 +76,7 @@ const SEED_HISTORY: TreasuryItem[] = [
     balance: "$150,000,000.00 USD",
     blobId: "wal_0x2c4e9f8a6b4d3e5f2a1b",
     txHash: "sui_0x5c4d8e7b9a2d3e1f8c9b",
+    publicId: "attestation-002",
     objectId: "0x3a81e9f2c57b660e6d018f4a9cb73d21",
     date: "2026-05-02",
     verifiedDate: "2026-05-04",
@@ -91,6 +94,7 @@ const SEED_HISTORY: TreasuryItem[] = [
     balance: "$45,210,000.00 USD",
     blobId: "wal_0x0df2c9ba9c289f81a7d3",
     txHash: "sui_0x3ab8f498c4d2e1a90cbf",
+    publicId: "attestation-003",
     objectId: "0x7f2d916a4b8e0c39a5d1f442be93c670",
     date: "2026-05-30",
     status: "pending",
@@ -267,6 +271,7 @@ function CFOPanel() {
               blobId,
               objectId,
               txHash: `0x${Math.random().toString(16).slice(2, 14)}${Math.random().toString(16).slice(2, 8)}`,
+              publicId: "attestation-draft",
               date: new Date().toISOString().split("T")[0],
               status: "pending",
               period,
@@ -753,6 +758,9 @@ function ProofDrawer({ record, onClose }: { record: TreasuryItem | null; onClose
               </a>
               <a href={`${WALRUS_URL}/blob/${record.blobId}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 hover:bg-zinc-50">
                 Retrieve from Walrus <ExternalLink size={13} />
+              </a>
+              <a href={`/verify/${record.publicId || record.id}`} className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 hover:bg-zinc-50">
+                Public verification URL <ExternalLink size={13} />
               </a>
             </div>
           </div>
