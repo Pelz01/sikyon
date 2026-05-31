@@ -3,15 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { 
-  ArrowRight, 
-  Database, 
-  ShieldCheck, 
-  Activity, 
-  HardDrive, 
-  HelpCircle, 
-  ChevronDown, 
-  CheckCircle2, 
-  Network
+  ArrowRight
 } from "lucide-react";
 
 interface FAQItem {
@@ -20,59 +12,7 @@ interface FAQItem {
 }
 
 export default function LandingPage() {
-  const [activeTab, setActiveTab] = useState<number>(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-  const workflowSteps = [
-    {
-      title: "1. Client-Side Hash Intake",
-      subtitle: "Privacy-Preserving SHA-256 Extraction",
-      desc: "The CFO imports raw financial statements locally. The browser extracts a cryptographic SHA-256 checksum in memory. The actual plaintext contents never touch a server, preventing critical institutional leaks.",
-      action: "Open CFO Intake",
-      link: "/app?tab=cfo",
-      details: [
-        { label: "Intake Node", value: "Client Local Thread" },
-        { label: "Hashing Standard", value: "SHA-256 Cryptographic" },
-        { label: "Privacy SLA", value: "Zero Plaintext Leakage" }
-      ]
-    },
-    {
-      title: "2. Walrus Blob Partitioning",
-      subtitle: "Decentralized Redundant Archiving",
-      desc: "The statement is partitioned and encoded using Fountain codes across the Walrus decentralized network. This secures files against node failures and generates an immutable content-addressed Blob ID.",
-      action: "Explore Mechanism",
-      link: "/about",
-      details: [
-        { label: "Storage Core", value: "Walrus Storage Nodes" },
-        { label: "Redundancy Core", value: "Erasure Fountain Coding" },
-        { label: "Address Hash", value: "walrus://blob/0x38bf...f42c" }
-      ]
-    },
-    {
-      title: "3. Sui Consensus Anchor",
-      subtitle: "Smart Contract Registry Minting",
-      desc: "An attestation object is minted on the Sui L1 ledger. The object permanently binds the Walrus Blob ID, the local SHA-256 hash, and the CFO's cryptographic signature, creating an unalterable proof of custody.",
-      action: "View Ledger Explorer",
-      link: "/app?tab=registry",
-      details: [
-        { label: "L1 Registry", value: "attestation.move" },
-        { label: "State Settlement", value: "Sui Ledger Object" },
-        { label: "Access Spec", value: "Read-only Immutable" }
-      ]
-    },
-    {
-      title: "4. Tatum RPC Verification",
-      subtitle: "Low-Latency Audit Validation",
-      desc: "Auditors retrieve the Sui contract states instantly using Tatum's indexed RPC endpoints. The auditor verifies the Walrus blob hash against the Sui registry to sign off on-chain.",
-      action: "Launch Audit Portal",
-      link: "/app?tab=auditor",
-      details: [
-        { label: "Gateway Node", value: "Tatum RPC Gateway" },
-        { label: "SLA Response", value: "Indexed Query < 100ms" },
-        { label: "Consensus Model", value: "Multi-sig Verification" }
-      ]
-    }
-  ];
 
   const faqData: FAQItem[] = [
     {
@@ -207,7 +147,7 @@ export default function LandingPage() {
                     <span className="text-[9px] text-zinc-400 font-medium tracking-wider">now</span>
                   </div>
                   <p className="text-[10px] text-zinc-550 mt-1.5 leading-relaxed font-medium">
-                    What's changed this week:<br />
+                    What&apos;s changed this week:<br />
                     • Redundant Fountain coding<br />
                     • Decentralized files split<br />
                     • Zero central outage risk
@@ -432,7 +372,7 @@ export default function LandingPage() {
                   <div className="pt-1">
                     <h4 className="font-medium text-white text-xs">Client-Side Intake</h4>
                     <p className="text-zinc-400 text-[11px] mt-0.5 leading-relaxed">
-                      Privacy-preserving local SHA-256 hash extraction. Plaintext files never leave the CFO's browser.
+                      Privacy-preserving local SHA-256 hash extraction. Plaintext files never leave the CFO&apos;s browser.
                     </p>
                   </div>
                 </div>

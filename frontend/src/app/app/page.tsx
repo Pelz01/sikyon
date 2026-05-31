@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { 
   Building2, 
@@ -41,6 +41,11 @@ interface TreasuryItem {
 }
 
 type TabKey = "cfo" | "auditor" | "registry";
+
+function getTabFromParams(searchParams: URLSearchParams): TabKey {
+  const tabParam = searchParams.get("tab");
+  return tabParam === "auditor" || tabParam === "registry" ? tabParam : "cfo";
+}
 
 /* ───────────────────── Seed Data ──────────────────── */
 const SEED_HISTORY: TreasuryItem[] = [
@@ -93,15 +98,8 @@ const SEED_HISTORY: TreasuryItem[] = [
    ══════════════════════════════════════════════════════════════ */
 function AppDashboardContent() {
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<TabKey>("cfo");
+  const [activeTab, setActiveTab] = useState<TabKey>(() => getTabFromParams(searchParams));
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  useEffect(() => {
-    const tabParam = searchParams.get("tab");
-    if (tabParam === "cfo" || tabParam === "auditor" || tabParam === "registry") {
-      setActiveTab(tabParam as TabKey);
-    }
-  }, [searchParams]);
 
   const handleTabChange = (key: TabKey) => {
     setActiveTab(key);
@@ -224,6 +222,7 @@ function CFOPanel() {
   const [declaredBalance, setDeclaredBalance] = useState("");
   const [institution, setInstitution] = useState("Coinbase Prime");
   const [period, setPeriod] = useState("Q2 2026");
+  const [submittedId, setSubmittedId] = useState("");
   const [history, setHistory] = useState<TreasuryItem[]>(SEED_HISTORY.filter(h => h.status === "verified" || h.status === "pending"));
 
   const handleUploadSubmit = (e: React.FormEvent) => {
@@ -238,8 +237,10 @@ function CFOPanel() {
           setTimeout(() => {
             setIsUploading(false);
             setSuccess(true);
+            const attestationId = `att_${Date.now()}`;
+            setSubmittedId(attestationId);
             const newItem: TreasuryItem = {
-              id: `att_${Date.now()}`,
+              id: attestationId,
               title: reportTitle,
               institution,
               balance: `$${Number(declaredBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`,
@@ -371,11 +372,11 @@ function CFOPanel() {
                   <p className="text-xs text-zinc-500 mt-1">Blob committed. Awaiting auditor review.</p>
                 </div>
                 <div className="inline-block text-left p-3 rounded-md border border-zinc-200 bg-zinc-50 space-y-2 font-mono text-xs text-zinc-600">
-                  <div className="flex gap-4"><span className="w-16">ID:</span><span className="text-zinc-900">att_{Date.now().toString().slice(-4)}</span></div>
+                  <div className="flex gap-4"><span className="w-16">ID:</span><span className="text-zinc-900">{submittedId}</span></div>
                   <div className="flex gap-4"><span className="w-16">Bal:</span><span className="text-zinc-900">${Number(declaredBalance).toLocaleString()}</span></div>
                 </div>
                 <div>
-                  <button onClick={() => { setFile(null); setReportTitle(""); setDeclaredBalance(""); setSuccess(false); setUploadProgress(0); }} className="px-4 py-2 bg-white border border-zinc-300 text-zinc-900 text-xs font-medium rounded-md hover:bg-zinc-50 transition-colors">Submit Another</button>
+                  <button onClick={() => { setFile(null); setReportTitle(""); setDeclaredBalance(""); setSubmittedId(""); setSuccess(false); setUploadProgress(0); }} className="px-4 py-2 bg-white border border-zinc-300 text-zinc-900 text-xs font-medium rounded-md hover:bg-zinc-50 transition-colors">Submit Another</button>
                 </div>
               </div>
             )}
