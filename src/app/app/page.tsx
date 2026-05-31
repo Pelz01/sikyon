@@ -7,19 +7,18 @@ import {
   ShieldCheck, 
   Database,
   Menu,
-  ChevronDown,
   ChevronRight,
   FileText,
   UploadCloud,
   CheckCircle2,
   Clock,
   Activity,
-  HardDrive,
   Search,
   Check,
   Shield,
   CircleDashed,
-  Wallet
+  ExternalLink,
+  X
 } from "lucide-react";
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -30,7 +29,9 @@ interface TreasuryItem {
   balance: string;
   blobId: string;
   txHash: string;
+  objectId?: string;
   date: string;
+  verifiedDate?: string;
   status: "verified" | "pending" | "draft";
   period?: string;
   cfoSigner?: string;
@@ -56,11 +57,15 @@ const SEED_HISTORY: TreasuryItem[] = [
     balance: "$225,320,000.00 USD",
     blobId: "wal_0x8f7c9e0d1a2938afbc9e",
     txHash: "sui_0x9cfb829ed8203f198e3b",
+    objectId: "0x9d1b7f4a8c2e6b019af5c31d8e72a449",
     date: "2026-04-01",
+    verifiedDate: "2026-04-03",
     status: "verified",
     period: "Q1 2026",
     cfoSigner: "0xCFO...4A2",
     auditorSigner: "0xAUD...9F1",
+    expectedHash: "91b7f8c0d4c1e2a53f6a7d1b0c9e8f37452aa7016cfbd8e9f0a142b3c4d5e6f71",
+    uploader: "0xCFO...4A2",
   },
   {
     id: "att_02",
@@ -69,11 +74,15 @@ const SEED_HISTORY: TreasuryItem[] = [
     balance: "$150,000,000.00 USD",
     blobId: "wal_0x2c4e9f8a6b4d3e5f2a1b",
     txHash: "sui_0x5c4d8e7b9a2d3e1f8c9b",
+    objectId: "0x3a81e9f2c57b660e6d018f4a9cb73d21",
     date: "2026-05-02",
+    verifiedDate: "2026-05-04",
     status: "verified",
     period: "April 2026",
     cfoSigner: "0xCFO...4A2",
     auditorSigner: "0xAUD...9F1",
+    expectedHash: "c2e4f6a8190b73dd45f9a2c18e7b61f0d3a55c9e48217a0bb6f33d2e1c984af5",
+    uploader: "0xCFO...4A2",
   },
   {
     id: "att_03",
@@ -82,6 +91,7 @@ const SEED_HISTORY: TreasuryItem[] = [
     balance: "$45,210,000.00 USD",
     blobId: "wal_0x0df2c9ba9c289f81a7d3",
     txHash: "sui_0x3ab8f498c4d2e1a90cbf",
+    objectId: "0x7f2d916a4b8e0c39a5d1f442be93c670",
     date: "2026-05-30",
     status: "pending",
     period: "Q2 2026",
@@ -92,6 +102,9 @@ const SEED_HISTORY: TreasuryItem[] = [
     uploader: "0xCFO...4A2",
   },
 ];
+
+const SUIVISION_URL = "https://suivision.xyz";
+const WALRUS_URL = "https://walruscan.com";
 
 /* ══════════════════════════════════════════════════════════════
    ROOT APP COMPONENT
@@ -111,7 +124,7 @@ function AppDashboardContent() {
   const TABS = [
     { key: "cfo" as TabKey, label: "CFO Intake", icon: <Building2 size={16} /> },
     { key: "auditor" as TabKey, label: "Auditor Verification", icon: <ShieldCheck size={16} /> },
-    { key: "registry" as TabKey, label: "Global Registry", icon: <Database size={16} /> },
+    { key: "registry" as TabKey, label: "Verified Treasury Records", icon: <Database size={16} /> },
   ];
 
   return (
@@ -177,9 +190,12 @@ function AppDashboardContent() {
           <div className={`flex items-center gap-2.5 ${sidebarOpen ? "" : "justify-center"}`}>
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             {sidebarOpen && (
-              <span className="text-xs font-medium text-zinc-500 truncate">
+              <button className="group relative text-left text-xs font-medium text-zinc-500 truncate">
                 Tatum Node: Connected
-              </span>
+                <span className="pointer-events-none absolute bottom-6 left-0 z-20 w-max max-w-[220px] rounded-md border border-zinc-200 bg-white px-3 py-2 font-mono text-[10px] text-zinc-700 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
+                  sui-mainnet.gateway.tatum.io
+                </span>
+              </button>
             )}
           </div>
         </div>
@@ -223,7 +239,9 @@ function CFOPanel() {
   const [institution, setInstitution] = useState("Coinbase Prime");
   const [period, setPeriod] = useState("Q2 2026");
   const [submittedId, setSubmittedId] = useState("");
+  const [submittedProof, setSubmittedProof] = useState<TreasuryItem | null>(null);
   const [history, setHistory] = useState<TreasuryItem[]>(SEED_HISTORY.filter(h => h.status === "verified" || h.status === "pending"));
+  const activeStep = success ? 4 : isUploading ? Math.min(3, Math.max(2, Math.ceil(uploadProgress / 40))) : file ? 1 : 0;
 
   const handleUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -239,16 +257,25 @@ function CFOPanel() {
             setSuccess(true);
             const attestationId = `att_${Date.now()}`;
             setSubmittedId(attestationId);
+            const blobId = `0x${Math.random().toString(16).slice(2, 14)}${Math.random().toString(16).slice(2, 8)}`;
+            const objectId = `0x${Math.random().toString(16).slice(2, 14)}${Math.random().toString(16).slice(2, 8)}`;
             const newItem: TreasuryItem = {
               id: attestationId,
               title: reportTitle,
               institution,
               balance: `$${Number(declaredBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`,
-              blobId: `wal_0x${Math.random().toString(16).substr(2, 10)}...`,
-              txHash: `sui_0x${Math.random().toString(16).substr(2, 10)}...`,
+              blobId,
+              objectId,
+              txHash: `0x${Math.random().toString(16).slice(2, 14)}${Math.random().toString(16).slice(2, 8)}`,
               date: new Date().toISOString().split("T")[0],
               status: "pending",
+              period,
+              cfoSigner: "0xCFO...4A2",
+              auditorSigner: "Awaiting Co-signature",
+              uploader: "0xCFO...4A2",
+              expectedHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             };
+            setSubmittedProof(newItem);
             setHistory((prev) => [newItem, ...prev]);
           }, 500);
           return 100;
@@ -270,21 +297,27 @@ function CFOPanel() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Total Capital", value: "$375.3M", icon: Wallet },
-          { label: "Pending", value: history.filter(h => h.status === "pending").length.toString(), icon: Clock },
-          { label: "Storage", value: "4.8 MB", icon: HardDrive },
-          { label: "SLA Status", value: "100%", icon: Activity },
-        ].map((s) => (
-          <div key={s.label} className="bg-white rounded-xl p-5 border border-zinc-200 shadow-sm flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-medium text-zinc-500">{s.label}</span>
-              <s.icon size={14} className="text-zinc-400" />
-            </div>
-            <div className="text-2xl font-medium mt-3 text-zinc-900">{s.value}</div>
-          </div>
-        ))}
+      <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+          {[
+            "Upload",
+            "Store on Walrus",
+            "Record on Sui",
+            "Pending Audit",
+          ].map((label, index) => {
+            const step = index + 1;
+            const isActive = activeStep === step;
+            const isDone = activeStep > step;
+            return (
+              <div key={label} className={`flex items-center gap-3 rounded-lg border p-3 transition-all ${isActive ? "border-zinc-900 bg-zinc-950 text-white shadow-sm" : isDone ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-zinc-200 bg-white text-zinc-500"}`}>
+                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-medium ${isActive ? "border-white/40 bg-white text-black" : isDone ? "border-emerald-300 bg-white text-emerald-700" : "border-zinc-200 bg-zinc-50 text-zinc-500"}`}>
+                  {isDone ? <Check size={13} /> : step}
+                </span>
+                <span className="text-xs font-medium">{label}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-12 gap-6 items-start">
@@ -365,19 +398,42 @@ function CFOPanel() {
                 )}
               </form>
             ) : (
-              <div className="text-center py-6 space-y-5 border border-zinc-200 rounded-lg bg-white shadow-sm">
-                <CheckCircle2 size={32} className="text-emerald-500 mx-auto" />
-                <div>
-                  <h3 className="text-base font-medium text-zinc-900">Submitted Successfully</h3>
-                  <p className="text-xs text-zinc-500 mt-1">Blob committed. Awaiting auditor review.</p>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
+                    <CheckCircle2 size={18} />
+                    Stored on Walrus
+                  </div>
+                  <div className="mt-3 rounded-md border border-emerald-200 bg-white p-3 font-mono text-xs text-zinc-700">
+                    <span className="block text-zinc-500">Blob ID</span>
+                    <span className="mt-1 block break-all text-zinc-950">{submittedProof?.blobId}</span>
+                  </div>
+                  <a href={`${WALRUS_URL}/blob/${submittedProof?.blobId}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-900">
+                    Retrieve <ExternalLink size={12} />
+                  </a>
                 </div>
-                <div className="inline-block text-left p-3 rounded-md border border-zinc-200 bg-zinc-50 space-y-2 font-mono text-xs text-zinc-600">
-                  <div className="flex gap-4"><span className="w-16">ID:</span><span className="text-zinc-900">{submittedId}</span></div>
-                  <div className="flex gap-4"><span className="w-16">Bal:</span><span className="text-zinc-900">${Number(declaredBalance).toLocaleString()}</span></div>
+
+                <div className="rounded-lg border border-sky-200 bg-sky-50 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-sky-700">
+                    <CheckCircle2 size={18} />
+                    Recorded on Sui
+                  </div>
+                  <div className="mt-3 rounded-md border border-sky-200 bg-white p-3 font-mono text-xs text-zinc-700">
+                    <span className="block text-zinc-500">Object ID</span>
+                    <span className="mt-1 block break-all text-zinc-950">{submittedProof?.objectId}</span>
+                  </div>
+                  <a href={`${SUIVISION_URL}/object/${submittedProof?.objectId}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-900">
+                    View on SuiVision <ExternalLink size={12} />
+                  </a>
                 </div>
-                <div>
-                  <button onClick={() => { setFile(null); setReportTitle(""); setDeclaredBalance(""); setSubmittedId(""); setSuccess(false); setUploadProgress(0); }} className="px-4 py-2 bg-white border border-zinc-300 text-zinc-900 text-xs font-medium rounded-md hover:bg-zinc-50 transition-colors">Submit Another</button>
+
+                <div className="rounded-lg border border-zinc-200 bg-white p-4">
+                  <div className="text-xs text-zinc-500">Attestation ID</div>
+                  <div className="mt-1 font-mono text-xs text-zinc-900">{submittedId}</div>
+                  <p className="mt-3 text-xs text-zinc-500">Status: Pending auditor co-signature.</p>
                 </div>
+
+                <button onClick={() => { setFile(null); setReportTitle(""); setDeclaredBalance(""); setSubmittedId(""); setSubmittedProof(null); setSuccess(false); setUploadProgress(0); }} className="w-full px-4 py-2 bg-white border border-zinc-300 text-zinc-900 text-xs font-medium rounded-md hover:bg-zinc-50 transition-colors">Submit Another</button>
               </div>
             )}
           </div>
@@ -429,6 +485,8 @@ function AuditorPanel() {
   const [isApproved, setIsApproved] = useState(false);
 
   const startVerification = () => {
+    setIsVerified(false);
+    setIsApproved(false);
     setIsVerifying(true);
     setVerificationStep(1);
     setTimeout(() => {
@@ -512,21 +570,27 @@ function AuditorPanel() {
 
               <div className="space-y-2">
                 {[
-                  { step: 1, label: "Fetch data from Walrus" },
-                  { step: 2, label: "Compute SHA-256 digest" },
-                  { step: 3, label: "Verify with Sui registry" }
+                  { step: 1, label: "Fetch from Walrus" },
+                  { step: 2, label: "Compute SHA-256" },
+                  { step: 3, label: "Verify with Sui" }
                 ].map((s) => (
-                  <div key={s.step} className="p-3 rounded-lg border border-zinc-200 bg-white flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-sm text-zinc-700">
+                  <div key={s.step} className={`p-3 rounded-lg border flex items-center justify-between transition-all duration-300 ${verificationStep === s.step ? "border-zinc-900 bg-zinc-950 shadow-sm" : verificationStep > s.step || (s.step === 3 && isVerified) ? "border-emerald-200 bg-emerald-50" : "border-zinc-200 bg-white"}`}>
+                    <div className={`flex items-center gap-3 text-sm transition-colors ${verificationStep === s.step ? "text-white" : verificationStep > s.step || (s.step === 3 && isVerified) ? "text-emerald-700" : "text-zinc-700"}`}>
                       {verificationStep > s.step || (s.step === 3 && isVerified) ? (
                         <CheckCircle2 size={16} className="text-emerald-500" />
                       ) : verificationStep === s.step ? (
-                        <CircleDashed size={16} className="text-zinc-400 animate-spin" />
+                        <CircleDashed size={16} className="text-white animate-spin" />
                       ) : (
                         <CircleDashed size={16} className="text-zinc-200" />
                       )}
                       <span>{s.label}</span>
                     </div>
+                    {verificationStep === s.step && (
+                      <span className="font-mono text-[10px] text-white/60">running</span>
+                    )}
+                    {(verificationStep > s.step || (s.step === 3 && isVerified)) && (
+                      <span className="font-mono text-[10px] text-emerald-600">passed</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -566,7 +630,7 @@ function AuditorPanel() {
 function RegistryPanel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "verified" | "pending">("all");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<TreasuryItem | null>(null);
 
   const filteredLedger = SEED_HISTORY.filter((item) => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.institution.toLowerCase().includes(searchQuery.toLowerCase());
@@ -580,7 +644,7 @@ function RegistryPanel() {
         <div>
           <h1 className="text-2xl font-medium tracking-tight text-zinc-900 flex items-center gap-2">
             <Database className="text-zinc-400" size={24} />
-            Global Registry
+            Verified Treasury Records
           </h1>
           <p className="text-zinc-500 text-sm mt-1.5">Read-only cryptographic log of all attestations.</p>
         </div>
@@ -607,7 +671,7 @@ function RegistryPanel() {
       <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm">
         <div className="grid grid-cols-12 gap-4 p-4 border-b border-zinc-200 text-xs font-medium text-zinc-500 hidden md:grid bg-zinc-50">
           <div className="col-span-5">Statement</div>
-          <div className="col-span-3">Balance</div>
+          <div className="col-span-3">Proof</div>
           <div className="col-span-3">Status</div>
           <div className="col-span-1 text-center"></div>
         </div>
@@ -615,12 +679,15 @@ function RegistryPanel() {
         <div className="divide-y divide-zinc-200">
           {filteredLedger.map((item) => (
             <div key={item.id} className="hover:bg-zinc-50/50 transition-colors">
-              <div onClick={() => setExpandedId(expandedId === item.id ? null : item.id)} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center text-sm cursor-pointer select-none">
+              <button onClick={() => setSelectedRecord(item)} className="grid w-full grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center text-left text-sm cursor-pointer select-none">
                 <div className="col-span-5 min-w-0 pr-4">
                   <p className="font-medium text-zinc-900 truncate">{item.title}</p>
                   <p className="text-xs text-zinc-500 mt-0.5">{item.institution}</p>
                 </div>
-                <div className="col-span-3 font-mono text-zinc-700">{item.balance}</div>
+                <div className="col-span-3 font-mono text-xs text-zinc-700">
+                  <span className="block truncate">{item.blobId}</span>
+                  <span className="mt-1 block truncate text-zinc-400">{item.objectId}</span>
+                </div>
                 <div className="col-span-3">
                   {item.status === "verified" ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-200">VERIFIED</span>
@@ -629,28 +696,68 @@ function RegistryPanel() {
                   )}
                 </div>
                 <div className="col-span-1 flex justify-center text-zinc-400">
-                  <ChevronDown size={16} className={`transition-transform duration-200 ${expandedId === item.id ? "rotate-180" : ""}`} />
+                  <ChevronRight size={16} />
                 </div>
-              </div>
-
-              {expandedId === item.id && (
-                <div className="bg-zinc-50 p-5 border-t border-zinc-200 text-xs text-zinc-600 font-mono space-y-4 shadow-inner">
-                  <div className="grid md:grid-cols-2 gap-8">
-                    <div className="space-y-2">
-                      <div><span className="text-zinc-500 mb-1 block font-sans font-medium">Walrus Blob</span><span className="text-zinc-800 truncate block bg-white p-1.5 rounded border border-zinc-200">{item.blobId}</span></div>
-                      <div><span className="text-zinc-500 mb-1 block font-sans font-medium">Sui Tx</span><span className="text-zinc-800 truncate block bg-white p-1.5 rounded border border-zinc-200">{item.txHash}</span></div>
-                    </div>
-                    <div className="space-y-2">
-                      <div><span className="text-zinc-500 mb-1 block font-sans font-medium">CFO Signature</span><span className="text-zinc-800 bg-white p-1.5 rounded border border-zinc-200 block">{item.cfoSigner}</span></div>
-                      <div><span className="text-zinc-500 mb-1 block font-sans font-medium">Auditor Signature</span><span className={`block bg-white p-1.5 rounded border border-zinc-200 ${item.status === "verified" ? "text-emerald-600 font-medium" : "text-zinc-800"}`}>{item.auditorSigner}</span></div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              </button>
             </div>
           ))}
         </div>
       </div>
+
+      <ProofDrawer record={selectedRecord} onClose={() => setSelectedRecord(null)} />
     </div>
+  );
+}
+
+function ProofDrawer({ record, onClose }: { record: TreasuryItem | null; onClose: () => void }) {
+  const proofRows = record ? [
+    ["Walrus Blob ID", record.blobId],
+    ["SHA-256 Hash", record.expectedHash || "Pending digest"],
+    ["Sui Object ID", record.objectId || "Pending object"],
+    ["Transaction ID", record.txHash],
+    ["Uploader address", record.uploader || record.cfoSigner || "0xCFO...4A2"],
+    ["Auditor address", record.auditorSigner || "Awaiting auditor"],
+    ["Created date", record.date],
+    ["Verified date", record.verifiedDate || "Pending audit"],
+  ] : [];
+
+  return (
+    <>
+      <div className={`fixed inset-0 z-40 bg-black/20 transition-opacity ${record ? "opacity-100" : "pointer-events-none opacity-0"}`} onClick={onClose} />
+      <aside className={`fixed right-0 top-16 z-50 h-[calc(100vh-64px)] w-full max-w-md border-l border-zinc-200 bg-white shadow-2xl transition-transform duration-300 ${record ? "translate-x-0" : "translate-x-full"}`}>
+        {record && (
+          <div className="flex h-full flex-col">
+            <div className="flex items-start justify-between border-b border-zinc-200 p-5">
+              <div>
+                <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-600">Proof Drawer</span>
+                <h2 className="mt-2 text-lg font-medium tracking-tight text-zinc-950">{record.title}</h2>
+                <p className="mt-1 text-xs text-zinc-500">{record.institution}</p>
+              </div>
+              <button onClick={onClose} className="rounded-md border border-zinc-200 p-2 text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-3 overflow-y-auto p-5">
+              {proofRows.map(([label, value]) => (
+                <div key={label} className="rounded-md border border-zinc-200 bg-zinc-50 p-3">
+                  <div className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">{label}</div>
+                  <div className="mt-1 break-all font-mono text-xs text-zinc-900">{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-2 border-t border-zinc-200 p-5">
+              <a href={`${SUIVISION_URL}/object/${record.objectId}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-md bg-black px-4 py-2.5 text-xs font-medium text-white hover:bg-zinc-800">
+                View on SuiVision <ExternalLink size={13} />
+              </a>
+              <a href={`${WALRUS_URL}/blob/${record.blobId}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 hover:bg-zinc-50">
+                Retrieve from Walrus <ExternalLink size={13} />
+              </a>
+            </div>
+          </div>
+        )}
+      </aside>
+    </>
   );
 }

@@ -74,7 +74,7 @@ export default function LandingPage() {
                   href="/app?tab=registry" 
                   className="w-full flex items-center justify-center py-3 rounded-full border border-zinc-250 bg-transparent hover:bg-zinc-50 text-zinc-800 text-[11px] font-medium tracking-wider transition-all"
                 >
-                  Global Registry
+                  Verified Records
                 </Link>
               </div>
             </div>
@@ -85,6 +85,11 @@ export default function LandingPage() {
       {/* Modular Stacks Details Grid */}
       <div className="bg-white border-t border-zinc-200">
         <section className="py-12 md:py-20 px-6 md:px-16 max-w-7xl mx-auto">
+        <div className="mb-10 max-w-3xl border-l border-zinc-300 pl-5">
+          <p className="text-sm leading-relaxed text-zinc-600">
+            Ancient Greek city-states built treasuries at Olympia to publicly demonstrate their prosperity and legitimacy. TreasuryVault brings this concept on-chain, turning reserve statements into verifiable attestations secured by Walrus and Sui.
+          </p>
+        </div>
         {/* Horizontal Divider and Header Grid */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10 md:mb-16">
           <div className="max-w-2xl">
@@ -535,7 +540,7 @@ export default function LandingPage() {
                   Auditor Desk
                 </Link>
                 <Link href="/app?tab=registry" className="border border-white/10 hover:border-white/30 text-zinc-400 hover:text-white px-3.5 py-1.5 rounded-full text-[10px] tracking-wider font-medium transition-all">
-                  Global Registry
+                  Verified Records
                 </Link>
               </div>
 
