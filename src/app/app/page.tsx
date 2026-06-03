@@ -301,6 +301,9 @@ function CFOPanel({
         uploader: walletAddress,
         expectedHash: digest,
         fileSize: formatFileSize(file.size),
+        walrusJobId: walrusResult.jobId,
+        walrusProvider: walrusResult.provider,
+        walrusUploadStatus: walrusResult.status,
         walrusStatus: "stored",
         suiStatus: "recorded",
       };
@@ -478,6 +481,13 @@ function CFOPanel({
                     <span className="block text-zinc-500">Blob ID</span>
                     <span className="mt-1 block break-all text-zinc-950">{submittedProof?.blobId}</span>
                   </div>
+                  {submittedProof?.walrusProvider === "tatum" && (
+                    <div className="mt-3 rounded-md border border-emerald-200 bg-white p-3 font-mono text-xs text-zinc-700">
+                      <span className="block text-zinc-500">Tatum Job</span>
+                      <span className="mt-1 block break-all text-zinc-950">{submittedProof.walrusJobId || "Pending"}</span>
+                      <span className="mt-2 block text-zinc-500">Status: {submittedProof.walrusUploadStatus || "PENDING"}</span>
+                    </div>
+                  )}
                   <a href={`${WALRUS_URL}/blob/${submittedProof?.blobId}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-900">
                     {submittedProof?.walrusStatus === "stored" ? "Retrieve" : "Configure Walrus publisher"} <ExternalLink size={12} />
                   </a>
@@ -854,6 +864,8 @@ function RegistryPanel({ records }: { records: AttestationRecord[] }) {
 function ProofDrawer({ record, onClose }: { record: AttestationRecord | null; onClose: () => void }) {
   const proofRows = record ? [
     ["Walrus Blob ID", record.blobId],
+    ["Walrus Provider", record.walrusProvider === "tatum" ? "Tatum Storage API" : "Publisher API"],
+    ["Tatum Upload Job", record.walrusJobId || "Not applicable"],
     ["SHA-256 Hash", record.expectedHash || "Pending digest"],
     ["Sui Object ID", record.objectId || "Pending object"],
     ["Registry Object ID", record.registryId || protocolConfig.suiRegistryObjectId],

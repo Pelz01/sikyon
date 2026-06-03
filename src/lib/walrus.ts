@@ -1,5 +1,3 @@
-import { getProtocolConfig } from "./attestations";
-
 type WalrusPublisherResponse = {
   newlyCreated?: {
     blobObject?: {
@@ -14,7 +12,7 @@ type WalrusPublisherResponse = {
   id?: string;
 };
 
-function getBlobIdFromResponse(response: WalrusPublisherResponse) {
+export function getBlobIdFromWalrusResponse(response: WalrusPublisherResponse) {
   return (
     response.newlyCreated?.blobObject?.blobId ||
     response.newlyCreated?.blobObject?.id ||
@@ -26,29 +24,39 @@ function getBlobIdFromResponse(response: WalrusPublisherResponse) {
 }
 
 export async function publishBlobToWalrus(file: File) {
-  const config = getProtocolConfig();
-  const url = new URL("/v1/blobs", config.walrusPublisherUrl);
-  url.searchParams.set("epochs", String(config.walrusEpochs));
-
-  const response = await fetch(url.toString(), {
-    method: "PUT",
+  const response = await fetch("/api/upload-walrus", {
+    method: "POST",
     body: file,
+    headers: {
+      "content-type": file.type || "application/octet-stream",
+      "x-file-name": encodeURIComponent(file.name),
+    },
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    throw new Error(errorText || `Walrus publisher returned HTTP ${response.status}`);
+    const errorPayload = await response.json().catch(() => null) as { error?: string; detail?: string } | null;
+    throw new Error(errorPayload?.detail || errorPayload?.error || `Walrus upload returned HTTP ${response.status}`);
   }
 
-  const payload = (await response.json()) as WalrusPublisherResponse;
-  const blobId = getBlobIdFromResponse(payload);
+  const payload = (await response.json()) as {
+    blobId?: string;
+    jobId?: string;
+    provider?: "tatum" | "publisher";
+    status?: string;
+    walrus?: WalrusPublisherResponse;
+    tatum?: unknown;
+  };
+  const blobId = payload.blobId || (payload.walrus ? getBlobIdFromWalrusResponse(payload.walrus) : "");
 
   if (!blobId) {
-    throw new Error("Walrus publisher did not return a blob ID.");
+    throw new Error("Walrus upload route did not return a blob ID.");
   }
 
   return {
     blobId,
-    payload,
+    jobId: payload.jobId || "",
+    provider: payload.provider || "publisher",
+    status: payload.status || "",
+    payload: payload.walrus || payload,
   };
 }

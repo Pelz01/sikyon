@@ -19,6 +19,9 @@ export interface AttestationRecord {
   fileSize?: string;
   expectedHash: string;
   uploader?: string;
+  walrusJobId?: string;
+  walrusProvider?: "tatum" | "publisher";
+  walrusUploadStatus?: string;
   walrusStatus: "stored" | "failed" | "pending_configuration";
   suiStatus: "recorded" | "pending_configuration";
 }
