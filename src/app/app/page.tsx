@@ -222,6 +222,14 @@ function CFOPanel({
   const [submittedProof, setSubmittedProof] = useState<AttestationRecord | null>(null);
   const [submitError, setSubmitError] = useState("");
   const activeStep = success ? 4 : isUploading ? Math.min(3, Math.max(2, Math.ceil(uploadProgress / 40))) : file ? 1 : 0;
+  const commitChecks = [
+    { label: "Wallet", complete: Boolean(currentAccount) },
+    { label: "Title", complete: Boolean(reportTitle.trim()) },
+    { label: "Balance", complete: Boolean(declaredBalance) },
+    { label: "Document", complete: Boolean(file) },
+    { label: "Hash", complete: Boolean(fileHash) && !isHashing },
+  ];
+  const canCommit = commitChecks.every((check) => check.complete);
 
   const handleFileChange = async (selectedFile: File | null) => {
     setFile(selectedFile);
@@ -441,10 +449,22 @@ function CFOPanel({
                     </div>
                   </div>
                 ) : (
-                  <button type="submit" disabled={!file || !reportTitle || !declaredBalance || isHashing || !currentAccount} className="w-full py-2.5 bg-black text-white font-medium text-sm rounded-md hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:hover:bg-black flex items-center justify-center gap-2">
-                    {currentAccount ? "Commit to Network" : "Connect Wallet to Commit"}
-                    <ChevronRight size={16} />
-                  </button>
+                  <div className="space-y-3">
+                    <button type="submit" disabled={!canCommit} className="w-full py-2.5 bg-black text-white font-medium text-sm rounded-md hover:bg-zinc-800 transition-colors disabled:bg-zinc-300 disabled:text-zinc-600 disabled:hover:bg-zinc-300 flex items-center justify-center gap-2">
+                      {currentAccount ? "Commit to Network" : "Connect Wallet to Commit"}
+                      <ChevronRight size={16} />
+                    </button>
+                    {!canCommit && (
+                      <div className="flex flex-wrap gap-2 text-[10px] font-medium">
+                        {commitChecks.map((check) => (
+                          <span key={check.label} className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${check.complete ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-zinc-200 bg-zinc-50 text-zinc-500"}`}>
+                            {check.complete ? <Check size={11} /> : <CircleDashed size={11} />}
+                            {check.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </form>
             ) : (
