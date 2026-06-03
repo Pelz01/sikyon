@@ -32,10 +32,9 @@ export default function Navbar() {
           )}
 
           {isInApp ? (
-            <button className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-[11px] font-medium text-zinc-700 hover:text-black hover:bg-zinc-50 transition-all flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-              Connect Wallet
-            </button>
+            <div className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-[11px] font-medium text-zinc-500">
+              Wallet in app
+            </div>
           ) : (
             <Link
               href="/app"

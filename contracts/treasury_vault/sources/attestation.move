@@ -46,14 +46,12 @@ module treasury_vault::attestation {
         upload_timestamp: u64,
         ctx: &mut TxContext
     ) {
-        let sender = tx_context::sender(ctx);
-        
         let attestation = Attestation {
             id: object::new(ctx),
             document_name,
             blob_id,
             file_hash,
-            uploader: sender,
+            uploader: tx_context::sender(ctx),
             upload_timestamp,
             status: 0,
             auditor: option::none(),
@@ -64,8 +62,8 @@ module treasury_vault::attestation {
         let attestation_id = object::id(&attestation);
         vector::push_back(&mut registry.attestations, attestation_id);
         
-        // Transfer to the sender
-        transfer::public_transfer(attestation, sender);
+        // Share so auditors can approve from a separate wallet.
+        transfer::share_object(attestation);
     }
 
     /// Approve an Attestation (Auditor only)

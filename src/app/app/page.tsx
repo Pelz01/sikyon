@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
 import { 
   Building2, 
   ShieldCheck, 
@@ -20,27 +21,24 @@ import {
   ExternalLink,
   X
 } from "lucide-react";
+import {
+  SUIVISION_URL,
+  WALRUS_URL,
+  currentTimestampMs,
+  getProtocolConfig,
+  readStoredAttestations,
+  type AttestationRecord,
+  writeStoredAttestations,
+} from "@/lib/attestations";
+import { publishBlobToWalrus } from "@/lib/walrus";
+import WalletConnectControl from "@/components/WalletConnectControl";
+import {
+  approveAttestationTransaction,
+  createAttestationTransaction,
+  findCreatedAttestationObjectId,
+} from "@/lib/suiAttestation";
 
-/* ─────────────────────────── Types ─────────────────────────── */
-interface TreasuryItem {
-  id: string;
-  title: string;
-  institution: string;
-  balance: string;
-  blobId: string;
-  txHash: string;
-  publicId?: string;
-  objectId?: string;
-  date: string;
-  verifiedDate?: string;
-  status: "verified" | "pending" | "draft";
-  period?: string;
-  cfoSigner?: string;
-  auditorSigner?: string;
-  fileSize?: string;
-  expectedHash?: string;
-  uploader?: string;
-}
+const protocolConfig = getProtocolConfig();
 
 type TabKey = "cfo" | "auditor" | "registry";
 
@@ -49,66 +47,20 @@ function getTabFromParams(searchParams: URLSearchParams): TabKey {
   return tabParam === "auditor" || tabParam === "registry" ? tabParam : "cfo";
 }
 
-/* ───────────────────── Seed Data ──────────────────── */
-const SEED_HISTORY: TreasuryItem[] = [
-  {
-    id: "att_01",
-    title: "Q1 Treasury Reserve Audit",
-    institution: "Fidelity Digital Assets",
-    balance: "$225,320,000.00 USD",
-    blobId: "wal_0x8f7c9e0d1a2938afbc9e",
-    txHash: "sui_0x9cfb829ed8203f198e3b",
-    publicId: "attestation-001",
-    objectId: "0x9d1b7f4a8c2e6b019af5c31d8e72a449",
-    date: "2026-04-01",
-    verifiedDate: "2026-04-03",
-    status: "verified",
-    period: "Q1 2026",
-    cfoSigner: "0xCFO...4A2",
-    auditorSigner: "0xAUD...9F1",
-    expectedHash: "91b7f8c0d4c1e2a53f6a7d1b0c9e8f37452aa7016cfbd8e9f0a142b3c4d5e6f71",
-    uploader: "0xCFO...4A2",
-  },
-  {
-    id: "att_02",
-    title: "April Cash Equivalent Yield Report",
-    institution: "Anchorage Digital",
-    balance: "$150,000,000.00 USD",
-    blobId: "wal_0x2c4e9f8a6b4d3e5f2a1b",
-    txHash: "sui_0x5c4d8e7b9a2d3e1f8c9b",
-    publicId: "attestation-002",
-    objectId: "0x3a81e9f2c57b660e6d018f4a9cb73d21",
-    date: "2026-05-02",
-    verifiedDate: "2026-05-04",
-    status: "verified",
-    period: "April 2026",
-    cfoSigner: "0xCFO...4A2",
-    auditorSigner: "0xAUD...9F1",
-    expectedHash: "c2e4f6a8190b73dd45f9a2c18e7b61f0d3a55c9e48217a0bb6f33d2e1c984af5",
-    uploader: "0xCFO...4A2",
-  },
-  {
-    id: "att_03",
-    title: "Q2 Corporate Cash Reserve Statement",
-    institution: "Coinbase Prime",
-    balance: "$45,210,000.00 USD",
-    blobId: "wal_0x0df2c9ba9c289f81a7d3",
-    txHash: "sui_0x3ab8f498c4d2e1a90cbf",
-    publicId: "attestation-003",
-    objectId: "0x7f2d916a4b8e0c39a5d1f442be93c670",
-    date: "2026-05-30",
-    status: "pending",
-    period: "Q2 2026",
-    cfoSigner: "0xCFO...4A2",
-    auditorSigner: "Awaiting Co-signature",
-    fileSize: "2.4 MB",
-    expectedHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    uploader: "0xCFO...4A2",
-  },
-];
+function bytesToHex(buffer: ArrayBuffer) {
+  return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
 
-const SUIVISION_URL = "https://suivision.xyz";
-const WALRUS_URL = "https://walruscan.com";
+async function hashFile(file: File) {
+  const buffer = await file.arrayBuffer();
+  return bytesToHex(await crypto.subtle.digest("SHA-256", buffer));
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 /* ══════════════════════════════════════════════════════════════
    ROOT APP COMPONENT
@@ -117,6 +69,15 @@ function AppDashboardContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabKey>(() => getTabFromParams(searchParams));
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [records, setRecords] = useState<AttestationRecord[]>(() => readStoredAttestations());
+
+  const updateRecords = (updater: (records: AttestationRecord[]) => AttestationRecord[]) => {
+    setRecords((current) => {
+      const next = updater(current);
+      writeStoredAttestations(next);
+      return next;
+    });
+  };
 
   const handleTabChange = (key: TabKey) => {
     setActiveTab(key);
@@ -149,6 +110,9 @@ function AppDashboardContent() {
               </button>
             );
           })}
+        </div>
+        <div className="ml-3 shrink-0">
+          <WalletConnectControl />
         </div>
       </div>
 
@@ -190,14 +154,15 @@ function AppDashboardContent() {
           })}
         </nav>
 
-        <div className="border-t border-zinc-200 p-4">
+        <div className="space-y-3 border-t border-zinc-200 p-4">
+          {sidebarOpen && <WalletConnectControl />}
           <div className={`flex items-center gap-2.5 ${sidebarOpen ? "" : "justify-center"}`}>
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             {sidebarOpen && (
               <button className="group relative text-left text-xs font-medium text-zinc-500 truncate">
                 Tatum Node: Connected
                 <span className="pointer-events-none absolute bottom-6 left-0 z-20 w-max max-w-[220px] rounded-md border border-zinc-200 bg-white px-3 py-2 font-mono text-[10px] text-zinc-700 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
-                  sui-mainnet.gateway.tatum.io
+                  {protocolConfig.tatumRpcEndpoint}
                 </span>
               </button>
             )}
@@ -207,9 +172,9 @@ function AppDashboardContent() {
 
       {/* ─────────── MAIN CONTENT AREA ─────────── */}
       <main className="flex-1 overflow-y-auto bg-slate-50">
-        {activeTab === "cfo" && <CFOPanel />}
-        {activeTab === "auditor" && <AuditorPanel />}
-        {activeTab === "registry" && <RegistryPanel />}
+        {activeTab === "cfo" && <CFOPanel records={records} updateRecords={updateRecords} />}
+        {activeTab === "auditor" && <AuditorPanel records={records} updateRecords={updateRecords} />}
+        {activeTab === "registry" && <RegistryPanel records={records} />}
       </main>
     </div>
   );
@@ -233,8 +198,19 @@ export default function AppDashboard() {
 /* ══════════════════════════════════════════════════════════════
    CFO INTAKE PANEL
    ══════════════════════════════════════════════════════════════ */
-function CFOPanel() {
+function CFOPanel({
+  records,
+  updateRecords,
+}: {
+  records: AttestationRecord[];
+  updateRecords: (updater: (records: AttestationRecord[]) => AttestationRecord[]) => void;
+}) {
+  const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const signAndExecuteTransaction = useSignAndExecuteTransaction();
   const [file, setFile] = useState<File | null>(null);
+  const [fileHash, setFileHash] = useState("");
+  const [isHashing, setIsHashing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [success, setSuccess] = useState(false);
@@ -243,51 +219,94 @@ function CFOPanel() {
   const [institution, setInstitution] = useState("Coinbase Prime");
   const [period, setPeriod] = useState("Q2 2026");
   const [submittedId, setSubmittedId] = useState("");
-  const [submittedProof, setSubmittedProof] = useState<TreasuryItem | null>(null);
-  const [history, setHistory] = useState<TreasuryItem[]>(SEED_HISTORY.filter(h => h.status === "verified" || h.status === "pending"));
+  const [submittedProof, setSubmittedProof] = useState<AttestationRecord | null>(null);
+  const [submitError, setSubmitError] = useState("");
   const activeStep = success ? 4 : isUploading ? Math.min(3, Math.max(2, Math.ceil(uploadProgress / 40))) : file ? 1 : 0;
 
-  const handleUploadSubmit = (e: React.FormEvent) => {
+  const handleFileChange = async (selectedFile: File | null) => {
+    setFile(selectedFile);
+    setFileHash("");
+    if (!selectedFile) return;
+
+    setIsHashing(true);
+    try {
+      setFileHash(await hashFile(selectedFile));
+    } finally {
+      setIsHashing(false);
+    }
+  };
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !reportTitle || !declaredBalance) return;
+    if (!file || !reportTitle || !declaredBalance || !currentAccount) return;
+    const digest = fileHash || await hashFile(file);
+    if (!fileHash) setFileHash(digest);
+
+    setSubmitError("");
     setIsUploading(true);
-    setUploadProgress(10);
-    const timer = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(timer);
-          setTimeout(() => {
-            setIsUploading(false);
-            setSuccess(true);
-            const attestationId = `att_${Date.now()}`;
-            setSubmittedId(attestationId);
-            const blobId = `0x${Math.random().toString(16).slice(2, 14)}${Math.random().toString(16).slice(2, 8)}`;
-            const objectId = `0x${Math.random().toString(16).slice(2, 14)}${Math.random().toString(16).slice(2, 8)}`;
-            const newItem: TreasuryItem = {
-              id: attestationId,
-              title: reportTitle,
-              institution,
-              balance: `$${Number(declaredBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`,
-              blobId,
-              objectId,
-              txHash: `0x${Math.random().toString(16).slice(2, 14)}${Math.random().toString(16).slice(2, 8)}`,
-              publicId: "attestation-draft",
-              date: new Date().toISOString().split("T")[0],
-              status: "pending",
-              period,
-              cfoSigner: "0xCFO...4A2",
-              auditorSigner: "Awaiting Co-signature",
-              uploader: "0xCFO...4A2",
-              expectedHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            };
-            setSubmittedProof(newItem);
-            setHistory((prev) => [newItem, ...prev]);
-          }, 500);
-          return 100;
-        }
-        return prev + 30;
+    setUploadProgress(35);
+
+    try {
+      const walrusResult = await publishBlobToWalrus(file);
+      setUploadProgress(70);
+
+      const uploadTimestamp = currentTimestampMs();
+      const transaction = createAttestationTransaction({
+        documentName: reportTitle,
+        blobId: walrusResult.blobId,
+        fileHash: digest,
+        uploadTimestamp,
       });
-    }, 400);
+      setUploadProgress(85);
+      const execution = await signAndExecuteTransaction.mutateAsync({
+        transaction,
+      });
+      const confirmedTransaction = await suiClient.waitForTransaction({
+        digest: execution.digest,
+        options: {
+          showObjectChanges: true,
+        },
+      });
+      const createdAttestationObjectId = findCreatedAttestationObjectId(confirmedTransaction.objectChanges);
+
+      if (!createdAttestationObjectId) {
+        throw new Error("Sui transaction succeeded, but the created Attestation object was not found.");
+      }
+
+      const attestationId = createdAttestationObjectId;
+      const walletAddress = currentAccount.address;
+      const newItem: AttestationRecord = {
+        id: attestationId,
+        publicId: `attestation-${createdAttestationObjectId.slice(-8)}`,
+        title: reportTitle,
+        institution,
+        balance: `$${Number(declaredBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`,
+        blobId: walrusResult.blobId,
+        objectId: createdAttestationObjectId,
+        registryId: protocolConfig.suiRegistryObjectId,
+        txHash: execution.digest,
+        date: new Date().toISOString().split("T")[0],
+        status: "pending",
+        period,
+        cfoSigner: walletAddress,
+        auditorSigner: "Awaiting Co-signature",
+        uploader: walletAddress,
+        expectedHash: digest,
+        fileSize: formatFileSize(file.size),
+        walrusStatus: "stored",
+        suiStatus: "recorded",
+      };
+
+      setUploadProgress(100);
+      setSubmittedId(attestationId);
+      setSubmittedProof(newItem);
+      updateRecords((prev) => [newItem, ...prev]);
+      setSuccess(true);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Network commit failed.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -299,6 +318,9 @@ function CFOPanel() {
             CFO Intake Portal
           </h1>
           <p className="text-zinc-500 text-sm mt-1.5">Submit reserve statements and request auditor multi-sig.</p>
+          {!currentAccount && (
+            <p className="mt-2 text-xs font-medium text-amber-600">Connect a Sui wallet before submitting an attestation.</p>
+          )}
         </div>
       </div>
 
@@ -368,7 +390,7 @@ function CFOPanel() {
                 </div>
 
                 <div className="border border-zinc-300 border-dashed rounded-lg p-6 text-center hover:bg-zinc-50 transition-colors bg-white">
-                  <input type="file" id="file-upload" className="hidden" required onChange={(e) => setFile(e.target.files?.[0] || null)} />
+                  <input type="file" id="file-upload" className="hidden" required onChange={(e) => void handleFileChange(e.target.files?.[0] || null)} />
                   <label htmlFor="file-upload" className="cursor-pointer block space-y-3">
                     <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center mx-auto text-zinc-500 border border-zinc-200">
                       <UploadCloud size={18} />
@@ -385,10 +407,33 @@ function CFOPanel() {
                   </label>
                 </div>
 
+                {(isHashing || fileHash) && (
+                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-medium text-zinc-600">Client-side SHA-256</span>
+                      {isHashing ? (
+                        <span className="font-mono text-[10px] text-zinc-500">hashing...</span>
+                      ) : (
+                        <span className="font-mono text-[10px] text-emerald-600">computed locally</span>
+                      )}
+                    </div>
+                    {fileHash && (
+                      <div className="mt-2 break-all font-mono text-xs text-zinc-900">{fileHash}</div>
+                    )}
+                  </div>
+                )}
+
+                {submitError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700">
+                    <span className="block font-medium">Network commit failed</span>
+                    <span className="mt-1 block break-words">{submitError}</span>
+                  </div>
+                )}
+
                 {isUploading ? (
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs text-zinc-500">
-                      <span>Encrypting to Walrus...</span>
+                      <span>{uploadProgress < 70 ? "Publishing to Walrus..." : "Recording on Sui..."}</span>
                       <span>{uploadProgress}%</span>
                     </div>
                     <div className="w-full bg-zinc-200 rounded-full h-1 overflow-hidden">
@@ -396,8 +441,8 @@ function CFOPanel() {
                     </div>
                   </div>
                 ) : (
-                  <button type="submit" disabled={!file || !reportTitle || !declaredBalance} className="w-full py-2.5 bg-black text-white font-medium text-sm rounded-md hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:hover:bg-black flex items-center justify-center gap-2">
-                    Commit to Network
+                  <button type="submit" disabled={!file || !reportTitle || !declaredBalance || isHashing || !currentAccount} className="w-full py-2.5 bg-black text-white font-medium text-sm rounded-md hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:hover:bg-black flex items-center justify-center gap-2">
+                    {currentAccount ? "Commit to Network" : "Connect Wallet to Commit"}
                     <ChevronRight size={16} />
                   </button>
                 )}
@@ -407,29 +452,34 @@ function CFOPanel() {
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
                     <CheckCircle2 size={18} />
-                    Stored on Walrus
+                    {submittedProof?.walrusStatus === "stored" ? "Stored on Walrus" : "Walrus Publisher Not Configured"}
                   </div>
                   <div className="mt-3 rounded-md border border-emerald-200 bg-white p-3 font-mono text-xs text-zinc-700">
                     <span className="block text-zinc-500">Blob ID</span>
                     <span className="mt-1 block break-all text-zinc-950">{submittedProof?.blobId}</span>
                   </div>
                   <a href={`${WALRUS_URL}/blob/${submittedProof?.blobId}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-900">
-                    Retrieve <ExternalLink size={12} />
+                    {submittedProof?.walrusStatus === "stored" ? "Retrieve" : "Configure Walrus publisher"} <ExternalLink size={12} />
                   </a>
                 </div>
 
                 <div className="rounded-lg border border-sky-200 bg-sky-50 p-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-sky-700">
                     <CheckCircle2 size={18} />
-                    Recorded on Sui
+                    {submittedProof?.suiStatus === "recorded" ? "Recorded on Sui" : "Sui Registry Not Configured"}
                   </div>
                   <div className="mt-3 rounded-md border border-sky-200 bg-white p-3 font-mono text-xs text-zinc-700">
                     <span className="block text-zinc-500">Object ID</span>
                     <span className="mt-1 block break-all text-zinc-950">{submittedProof?.objectId}</span>
                   </div>
                   <a href={`${SUIVISION_URL}/object/${submittedProof?.objectId}`} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-900">
-                    View on SuiVision <ExternalLink size={12} />
+                    {submittedProof?.suiStatus === "recorded" ? "View on SuiVision" : "Configure Sui contract"} <ExternalLink size={12} />
                   </a>
+                  {submittedProof?.suiStatus === "recorded" && (
+                    <a href={`${SUIVISION_URL}/txblock/${submittedProof.txHash}`} target="_blank" rel="noreferrer" className="ml-4 mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-sky-700 hover:text-sky-900">
+                      View transaction <ExternalLink size={12} />
+                    </a>
+                  )}
                 </div>
 
                 <div className="rounded-lg border border-zinc-200 bg-white p-4">
@@ -438,7 +488,7 @@ function CFOPanel() {
                   <p className="mt-3 text-xs text-zinc-500">Status: Pending auditor co-signature.</p>
                 </div>
 
-                <button onClick={() => { setFile(null); setReportTitle(""); setDeclaredBalance(""); setSubmittedId(""); setSubmittedProof(null); setSuccess(false); setUploadProgress(0); }} className="w-full px-4 py-2 bg-white border border-zinc-300 text-zinc-900 text-xs font-medium rounded-md hover:bg-zinc-50 transition-colors">Submit Another</button>
+                <button onClick={() => { setFile(null); setFileHash(""); setReportTitle(""); setDeclaredBalance(""); setSubmittedId(""); setSubmittedProof(null); setSuccess(false); setUploadProgress(0); setSubmitError(""); }} className="w-full px-4 py-2 bg-white border border-zinc-300 text-zinc-900 text-xs font-medium rounded-md hover:bg-zinc-50 transition-colors">Submit Another</button>
               </div>
             )}
           </div>
@@ -451,7 +501,7 @@ function CFOPanel() {
               Recent Submissions
             </h3>
             <div className="space-y-3">
-              {history.map((item) => (
+              {records.map((item) => (
                 <div key={item.id} className="p-3 rounded-lg border border-zinc-200 bg-zinc-50 space-y-3 hover:border-zinc-300 transition-colors">
                   <div className="flex justify-between items-start gap-3">
                     <div className="min-w-0">
@@ -481,15 +531,27 @@ function CFOPanel() {
 /* ══════════════════════════════════════════════════════════════
    AUDITOR PANEL
    ══════════════════════════════════════════════════════════════ */
-function AuditorPanel() {
-  const pendingItems = SEED_HISTORY.filter((h) => h.status === "pending");
-  const [selectedAudit, setSelectedAudit] = useState<TreasuryItem | null>(pendingItems[0] || null);
+function AuditorPanel({
+  records,
+  updateRecords,
+}: {
+  records: AttestationRecord[];
+  updateRecords: (updater: (records: AttestationRecord[]) => AttestationRecord[]) => void;
+}) {
+  const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const signAndExecuteTransaction = useSignAndExecuteTransaction();
+  const pendingItems = records.filter((h) => h.status === "pending");
+  const [selectedAuditId, setSelectedAuditId] = useState<string | null>(null);
+  const selectedAudit = records.find((record) => record.id === selectedAuditId) || pendingItems[0] || null;
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStep, setVerificationStep] = useState(0);
   const [isVerified, setIsVerified] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
+  const [approvalError, setApprovalError] = useState("");
 
   const startVerification = () => {
+    if (!selectedAudit) return;
     setIsVerified(false);
     setIsApproved(false);
     setIsVerifying(true);
@@ -506,6 +568,47 @@ function AuditorPanel() {
     }, 1000);
   };
 
+  const approveAudit = async () => {
+    if (!selectedAudit || !currentAccount) return;
+    setApprovalError("");
+
+    try {
+      if (!selectedAudit.objectId.startsWith("0x")) {
+        throw new Error("This record does not have a Sui Attestation object ID.");
+      }
+
+      const transaction = approveAttestationTransaction({
+        attestationObjectId: selectedAudit.objectId,
+        auditTimestamp: currentTimestampMs(),
+      });
+      const execution = await signAndExecuteTransaction.mutateAsync({
+        transaction,
+      });
+
+      await suiClient.waitForTransaction({
+        digest: execution.digest,
+        options: {
+          showEffects: true,
+        },
+      });
+
+      const verifiedDate = new Date().toISOString().split("T")[0];
+      const updatedAudit: AttestationRecord = {
+        ...selectedAudit,
+        status: "verified",
+        auditorSigner: currentAccount.address,
+        verifiedDate,
+        txHash: execution.digest,
+      };
+
+      updateRecords((current) => current.map((item) => item.id === selectedAudit.id ? updatedAudit : item));
+      setSelectedAuditId(updatedAudit.id);
+      setIsApproved(true);
+    } catch (error) {
+      setApprovalError(error instanceof Error ? error.message : "Sui approval transaction failed.");
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-8 space-y-8 animate-fade-in-up">
       <div className="flex items-end justify-between border-b border-zinc-200 pb-6">
@@ -515,6 +618,9 @@ function AuditorPanel() {
             Auditor Desk
           </h1>
           <p className="text-zinc-500 text-sm mt-1.5">Review, verify cryptographic hashes, and co-sign attestations.</p>
+          {!currentAccount && (
+            <p className="mt-2 text-xs font-medium text-amber-600">Connect a Sui wallet to co-sign verified attestations.</p>
+          )}
         </div>
       </div>
 
@@ -531,7 +637,7 @@ function AuditorPanel() {
                 {pendingItems.map((audit) => (
                   <button
                     key={audit.id}
-                    onClick={() => { setSelectedAudit(audit); setIsVerified(false); setIsApproved(false); setVerificationStep(0); }}
+                    onClick={() => { setSelectedAuditId(audit.id); setIsVerified(false); setIsApproved(false); setVerificationStep(0); setApprovalError(""); }}
                     className={`w-full text-left p-3 rounded-lg border transition-all ${ selectedAudit?.id === audit.id ? "bg-zinc-50 border-zinc-300 shadow-sm" : "bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300" }`}
                   >
                     <div className="flex justify-between items-start">
@@ -607,13 +713,19 @@ function AuditorPanel() {
                     {!isVerifying && <Shield size={16} />}
                   </button>
                 ) : !isApproved ? (
-                  <button onClick={() => setIsApproved(true)} className="w-full py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-md hover:bg-emerald-500 transition-colors flex items-center justify-center gap-2">
-                    Approve & Co-Sign
+                  <button onClick={() => void approveAudit()} disabled={!currentAccount || signAndExecuteTransaction.isPending} className="w-full py-2.5 bg-emerald-600 text-white font-medium text-sm rounded-md hover:bg-emerald-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                    {!currentAccount ? "Connect Wallet to Co-Sign" : signAndExecuteTransaction.isPending ? "Awaiting Wallet Signature..." : "Approve & Co-Sign"}
                     <Check size={16} />
                   </button>
                 ) : (
                   <div className="w-full py-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-center rounded-md font-medium text-sm shadow-sm">
                     Verified and Anchored
+                  </div>
+                )}
+                {approvalError && (
+                  <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700">
+                    <span className="block font-medium">Sui approval failed</span>
+                    <span className="mt-1 block break-words">{approvalError}</span>
                   </div>
                 )}
               </div>
@@ -632,12 +744,12 @@ function AuditorPanel() {
 /* ══════════════════════════════════════════════════════════════
    REGISTRY PANEL
    ══════════════════════════════════════════════════════════════ */
-function RegistryPanel() {
+function RegistryPanel({ records }: { records: AttestationRecord[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "verified" | "pending">("all");
-  const [selectedRecord, setSelectedRecord] = useState<TreasuryItem | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<AttestationRecord | null>(null);
 
-  const filteredLedger = SEED_HISTORY.filter((item) => {
+  const filteredLedger = records.filter((item) => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.institution.toLowerCase().includes(searchQuery.toLowerCase());
     if (activeFilter === "all") return matchesSearch;
     return matchesSearch && item.status === activeFilter;
@@ -706,6 +818,11 @@ function RegistryPanel() {
               </button>
             </div>
           ))}
+          {filteredLedger.length === 0 && (
+            <div className="p-10 text-center text-sm text-zinc-500">
+              No verified treasury records yet. Submit a document from CFO Intake, then co-sign it from Auditor Verification.
+            </div>
+          )}
         </div>
       </div>
 
@@ -714,16 +831,19 @@ function RegistryPanel() {
   );
 }
 
-function ProofDrawer({ record, onClose }: { record: TreasuryItem | null; onClose: () => void }) {
+function ProofDrawer({ record, onClose }: { record: AttestationRecord | null; onClose: () => void }) {
   const proofRows = record ? [
     ["Walrus Blob ID", record.blobId],
     ["SHA-256 Hash", record.expectedHash || "Pending digest"],
     ["Sui Object ID", record.objectId || "Pending object"],
+    ["Registry Object ID", record.registryId || protocolConfig.suiRegistryObjectId],
     ["Transaction ID", record.txHash],
-    ["Uploader address", record.uploader || record.cfoSigner || "0xCFO...4A2"],
+    ["Uploader address", record.uploader || record.cfoSigner || "Unknown"],
     ["Auditor address", record.auditorSigner || "Awaiting auditor"],
     ["Created date", record.date],
     ["Verified date", record.verifiedDate || "Pending audit"],
+    ["Walrus adapter", record.walrusStatus === "stored" ? "Stored" : record.walrusStatus === "failed" ? "Failed" : "Pending configuration"],
+    ["Sui adapter", record.suiStatus === "recorded" ? "Recorded" : "Pending configuration"],
   ] : [];
 
   return (

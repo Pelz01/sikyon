@@ -1,7 +1,9 @@
+import SuiProviders from "@/components/SuiProviders";
+
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <SuiProviders>{children}</SuiProviders>;
 }
