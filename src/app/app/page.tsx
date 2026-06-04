@@ -118,32 +118,37 @@ function AppDashboardContent() {
 
       {/* Desktop Sidebar (Hidden on Mobile) */}
       <aside
-        className={`hidden md:flex ${ sidebarOpen ? "w-60" : "w-[68px]" } shrink-0 transition-all duration-200 ease-in-out flex-col border-r border-zinc-200 bg-white z-10`}
+        className={`relative hidden md:flex ${ sidebarOpen ? "w-60" : "w-[68px]" } shrink-0 transition-all duration-200 ease-in-out flex-col overflow-hidden border-r border-white/10 bg-[#0a0f1e] z-10`}
       >
-        <div className="h-14 flex items-center px-4 border-b border-zinc-200">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-center bg-no-repeat opacity-[0.04]"
+          style={{ backgroundImage: "url('/brand/sikyon-column-watermark.svg')", backgroundSize: sidebarOpen ? "78%" : "150px" }}
+        />
+        <div className="relative z-10 h-14 flex items-center px-4 border-b border-white/10">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="w-8 h-8 rounded-md hover:bg-zinc-100 flex items-center justify-center text-zinc-500 hover:text-zinc-900 transition-colors"
+            className="w-8 h-8 rounded-md hover:bg-white/10 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
           >
             <Menu size={16} />
           </button>
           {sidebarOpen && (
-            <span className="ml-3 text-xs font-medium text-zinc-500 tracking-wide truncate">
+            <span className="ml-3 text-xs font-medium text-zinc-400 tracking-wide truncate">
               Menu
             </span>
           )}
         </div>
 
-        <nav className="flex-1 py-4 px-3 space-y-1">
+        <nav className="relative z-10 flex-1 py-4 px-3 space-y-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
             return (
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                className={`w-full flex items-center gap-3 rounded-md transition-colors duration-150 group relative ${sidebarOpen ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"} ${isActive ? "bg-zinc-100 text-zinc-900 font-medium" : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"}`}
+                className={`w-full flex items-center gap-3 rounded-md transition-colors duration-150 group relative ${sidebarOpen ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"} ${isActive ? "bg-white/10 text-white font-medium" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}
               >
-                <span className={`shrink-0 ${isActive ? "text-zinc-900" : "text-zinc-500 group-hover:text-zinc-700"}`}>
+                <span className={`shrink-0 ${isActive ? "text-white" : "text-zinc-500 group-hover:text-zinc-200"}`}>
                   {tab.icon}
                 </span>
                 {sidebarOpen && (
@@ -154,14 +159,14 @@ function AppDashboardContent() {
           })}
         </nav>
 
-        <div className="space-y-3 border-t border-zinc-200 p-4">
+        <div className="relative z-10 space-y-3 border-t border-white/10 p-4">
           {sidebarOpen && <WalletConnectControl />}
           <div className={`flex items-center gap-2.5 ${sidebarOpen ? "" : "justify-center"}`}>
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             {sidebarOpen && (
-              <button className="group relative text-left text-xs font-medium text-zinc-500 truncate">
+              <button className="group relative text-left text-xs font-medium text-zinc-400 truncate">
                 Tatum Node: Connected
-                <span className="pointer-events-none absolute bottom-6 left-0 z-20 w-max max-w-[220px] rounded-md border border-zinc-200 bg-white px-3 py-2 font-mono text-[10px] text-zinc-700 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
+                <span className="pointer-events-none absolute bottom-6 left-0 z-20 w-max max-w-[220px] rounded-md border border-white/10 bg-[#10172a] px-3 py-2 font-mono text-[10px] text-zinc-200 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100">
                   {protocolConfig.tatumRpcEndpoint}
                 </span>
               </button>
@@ -400,9 +405,9 @@ function CFOPanel({
                   </div>
                 </div>
 
-                <div className="border border-zinc-300 border-dashed rounded-lg p-6 text-center hover:bg-zinc-50 transition-colors bg-white">
+                <div className="upload-stamp-zone relative overflow-hidden border border-zinc-300 border-dashed rounded-lg p-6 text-center hover:bg-zinc-50 transition-colors bg-white">
                   <input type="file" id="file-upload" className="hidden" required onChange={(e) => void handleFileChange(e.target.files?.[0] || null)} />
-                  <label htmlFor="file-upload" className="cursor-pointer block space-y-3">
+                  <label htmlFor="file-upload" className="relative z-10 cursor-pointer block space-y-3">
                     <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center mx-auto text-zinc-500 border border-zinc-200">
                       <UploadCloud size={18} />
                     </div>

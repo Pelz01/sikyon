@@ -36,14 +36,13 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen bg-zinc-50 text-zinc-900 font-sans">
       {/* Editorial Full-Bleed Hero Section */}
-      <section className="relative h-auto md:h-[calc(100vh-64px)] md:min-h-[600px] flex flex-col justify-end pt-24 pb-16 md:pb-24 px-6 md:px-16 overflow-hidden bg-white text-zinc-950">
+      <section className="relative h-auto md:h-[calc(100vh-64px)] md:min-h-[600px] flex flex-col justify-end pt-24 pb-16 md:pb-24 px-6 md:px-16 overflow-hidden bg-[#05070d] text-white">
         {/* Background Image Container */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0" 
-          style={{ backgroundImage: "url('/hero_bg.jpg')" }}
+          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat" 
+          style={{ backgroundImage: "url('/brand/greek-city.jpg')", filter: "brightness(0.25) saturate(0.3)" }}
         ></div>
-        {/* Soft Light Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent z-10"></div>
+        <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#05070d] via-[#05070d]/35 to-[#05070d]/60"></div>
 
         <div className="max-w-7xl mx-auto w-full relative z-20 flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
           {/* Giant Bottom-Left Typography */}

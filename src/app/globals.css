@@ -16,6 +16,19 @@
   color: black;
 }
 
+.upload-stamp-zone::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  background-image: url("/brand/trusted-stamp.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.08;
+  pointer-events: none;
+  z-index: 0;
+}
+
 @theme {
   --color-background: #f8fafc; /* zinc-50 equivalent but using slate-50 */
   --color-foreground: #09090b; /* zinc-950 */

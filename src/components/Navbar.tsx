@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 export default function Navbar() {
@@ -11,10 +12,10 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-zinc-200 font-sans">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-6 h-6 flex items-center justify-center bg-black text-white font-medium text-[10px] rounded-[4px]">
-            TV
-          </div>
+        <Link href="/" className="flex items-center gap-3 group">
+          <span className="relative h-9 w-9 overflow-hidden rounded-sm bg-white">
+            <Image src="/brand/sikyon-mark.svg" alt="Sikyon" fill sizes="36px" className="object-contain" priority />
+          </span>
           <span className="text-sm font-medium tracking-tight text-zinc-900 group-hover:text-zinc-600 transition-colors">
             TreasuryVault
           </span>
