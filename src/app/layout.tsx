@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TreasuryVault | Verifiable Attestations",
+  title: "Sikyon | Verifiable Attestations",
   description: "Verifiable treasury attestations on Sui and Walrus.",
 };
 

@@ -28,7 +28,8 @@ export interface AttestationRecord {
 
 export const SUIVISION_URL = "https://suivision.xyz";
 export const WALRUS_URL = "https://walruscan.com";
-export const ATTESTATION_STORAGE_KEY = "treasury-vault-attestations";
+export const LEGACY_ATTESTATION_STORAGE_KEY = "treasury-vault-attestations";
+export const ATTESTATION_STORAGE_KEY = "sikyon-attestations";
 export const DEFAULT_PACKAGE_ID = "0xe8a24a144e84b9f353765b4475478e7de727e5ce64b95168ff5cb6eb6b65b1df";
 export const DEFAULT_REGISTRY_ID = "0x8e0a27ba028a602d134953d9cb3d95377b493eb0f5107158fbf1a5c9ed503622";
 
@@ -36,7 +37,7 @@ export function readStoredAttestations(): AttestationRecord[] {
   if (typeof window === "undefined") return [];
 
   try {
-    const raw = window.localStorage.getItem(ATTESTATION_STORAGE_KEY);
+    const raw = window.localStorage.getItem(ATTESTATION_STORAGE_KEY) || window.localStorage.getItem(LEGACY_ATTESTATION_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];

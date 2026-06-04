@@ -98,7 +98,7 @@ export async function GET(
   if (!fields || data.content?.type !== expectedType) {
     return NextResponse.json(
       {
-        error: "Object is not a TreasuryVault attestation.",
+        error: "Object is not a Sikyon attestation.",
         objectType: data.content?.type,
       },
       { status: 404 },

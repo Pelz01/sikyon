@@ -17,7 +17,7 @@ export default function Navbar() {
             <Image src="/brand/sikyon-mark.svg" alt="Sikyon" fill sizes="36px" className="object-contain" priority />
           </span>
           <span className="text-sm font-medium tracking-tight text-zinc-900 group-hover:text-zinc-600 transition-colors">
-            TreasuryVault
+            Sikyon
           </span>
         </Link>
 

@@ -59,7 +59,7 @@ export default async function VerifyPage({
             </div>
           </div>
           <p className="mt-6 text-sm text-zinc-500">
-            This public page expects a Sui Attestation object ID from TreasuryVault.
+            This public page expects a Sui Attestation object ID from Sikyon.
           </p>
         </section>
       </main>

@@ -16,7 +16,7 @@ export default function LandingPage() {
 
   const faqData: FAQItem[] = [
     {
-      question: "How does TreasuryVault secure institutional document privacy?",
+      question: "How does Sikyon secure institutional document privacy?",
       answer: "We employ client-side hashing. When the CFO selects a statement, the browser calculates its SHA-256 hash locally in memory. The public ledger only stores the cryptographic hashes, metadata pointers, and signatures. Raw data stored on Walrus can be fully encrypted, ensuring no external party can read the statements without keys."
     },
     {
@@ -48,10 +48,11 @@ export default function LandingPage() {
           {/* Giant Bottom-Left Typography */}
           <div className="space-y-4 max-w-2xl animate-fade-in-up text-left relative z-30">
             <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white leading-[0.88]">
-              Cryptographic<br />
-              Treasury<br />
-              Vaults
+              Sikyon
             </h1>
+            <p className="max-w-lg text-sm font-medium leading-relaxed text-white/70">
+              Public treasury attestations secured by Walrus storage, Sui smart contracts, and Tatum infrastructure.
+            </p>
           </div>
 
           {/* Bottom-Right Ivory Floating Card */}
@@ -86,7 +87,7 @@ export default function LandingPage() {
         <section className="py-12 md:py-20 px-6 md:px-16 max-w-7xl mx-auto">
         <div className="mb-10 max-w-3xl border-l border-zinc-300 pl-5">
           <p className="text-sm leading-relaxed text-zinc-600">
-            Ancient Greek city-states built treasuries at Olympia to publicly demonstrate their prosperity and legitimacy. TreasuryVault brings this concept on-chain, turning reserve statements into verifiable attestations secured by Walrus and Sui.
+            Ancient Greek city-states built treasuries at Olympia to publicly demonstrate their prosperity and legitimacy. Sikyon brings this concept on-chain, turning reserve statements into verifiable attestations secured by Walrus and Sui.
           </p>
         </div>
         {/* Horizontal Divider and Header Grid */}
@@ -99,7 +100,7 @@ export default function LandingPage() {
           </div>
           <div className="max-w-md md:pt-2">
             <p className="text-zinc-550 text-sm leading-relaxed font-medium">
-              TreasuryVault decouples storage, blockchain registry, and network querying layers to ensure professional modular uptime.
+              Sikyon decouples storage, blockchain registry, and network querying layers to ensure professional modular uptime.
             </p>
           </div>
         </div>
@@ -440,7 +441,7 @@ export default function LandingPage() {
                 Common<br />inquiries.
               </h2>
               <p className="text-zinc-550 text-sm mt-3 leading-relaxed">
-                Everything you need to know about the TreasuryVault cryptographic validation and attestation architecture.
+                Everything you need to know about the Sikyon cryptographic validation and attestation architecture.
               </p>
             </div>
           </div>
@@ -491,7 +492,7 @@ export default function LandingPage() {
             Verify instantly.<br />settle irreversibly.
           </h2>
           <p className="text-zinc-400 text-sm max-w-xl mx-auto leading-relaxed">
-            Integrate TreasuryVault with your corporate accounts. Secure statement fragments globally on Walrus and log tamper-proof attestation hashes directly on SUI Move contract settle layers.
+            Integrate Sikyon with your corporate accounts. Secure statement fragments globally on Walrus and log tamper-proof attestation hashes directly on SUI Move contract settle layers.
           </p>
           
           <div className="flex flex-wrap justify-center gap-4 pt-2">
@@ -564,13 +565,13 @@ export default function LandingPage() {
             {/* Bottom Left: Large Title */}
             <div>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight text-white select-none">
-                TreasuryVault
+                Sikyon
               </h2>
             </div>
 
             {/* Bottom Right: Copyright & Credits */}
             <div className="text-left md:text-right font-mono text-[10px] text-zinc-500">
-              <p className="font-sans">© 2026 TreasuryVault, Inc. All Rights Reserved.</p>
+              <p className="font-sans">© 2026 Sikyon, Inc. All Rights Reserved.</p>
             </div>
           </div>
         </div>

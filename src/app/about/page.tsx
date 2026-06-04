@@ -63,7 +63,7 @@ export default function AboutPage() {
           </Link>
           <div>
             <span className="text-zinc-500 text-[10px] font-mono font-medium tracking-widest">Protocol Specifications</span>
-            <h1 className="text-4xl font-medium tracking-tight text-white mt-1">Under the Hood: TreasuryVault</h1>
+            <h1 className="text-4xl font-medium tracking-tight text-white mt-1">Under the Hood: Sikyon</h1>
             <p className="text-zinc-400 text-sm mt-1">Learn how the decentralized three-layer consensus model ensures reserves verification.</p>
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function AboutPage() {
         {/* Comparison Grid: Traditional vs. Decoupled Attestation */}
         <div className="space-y-4 animate-fade-in-up" style={{ animationDelay: "100ms" }}>
           <div>
-            <h3 className="text-lg font-medium text-white">Trust Matrix: Traditional vs. TreasuryVault</h3>
+            <h3 className="text-lg font-medium text-white">Trust Matrix: Traditional vs. Sikyon</h3>
             <p className="text-xs text-zinc-500 mt-1 font-mono tracking-wider">Why institutional reserve validation requires a three-layer blockchain architecture.</p>
           </div>
 
@@ -167,7 +167,7 @@ export default function AboutPage() {
             <div className="grid grid-cols-12 gap-4 p-4 bg-zinc-900/30 border-b border-zinc-800 text-[10px] font-medium text-zinc-500 tracking-wider font-mono hidden md:grid">
               <div className="col-span-3">Feature Parameter</div>
               <div className="col-span-4">Traditional Centralized (S3 / GCS)</div>
-              <div className="col-span-5">TreasuryVault Protocol</div>
+              <div className="col-span-5">Sikyon Protocol</div>
             </div>
 
             <div className="divide-y divide-zinc-800 text-xs">
