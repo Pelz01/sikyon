@@ -93,7 +93,7 @@ function AppDashboardContent() {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden bg-slate-50 text-zinc-900 font-sans">
+    <div className="relative flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden bg-slate-50 text-zinc-900 font-sans">
       {/* Mobile Top Navigation Tabs (Hidden on Desktop) */}
       <div className="md:hidden bg-white border-b border-zinc-200 px-4 py-2.5 flex justify-between items-center shrink-0">
         <div className="flex gap-1.5 overflow-x-auto scrollbar-none w-full justify-around">
@@ -176,7 +176,7 @@ function AppDashboardContent() {
       </aside>
 
       {/* ─────────── MAIN CONTENT AREA ─────────── */}
-      <main className="flex-1 overflow-y-auto bg-slate-50">
+      <main className="app-main-watermark relative flex-1 overflow-y-auto bg-slate-50">
         {activeTab === "cfo" && <CFOPanel records={records} updateRecords={updateRecords} />}
         {activeTab === "auditor" && <AuditorPanel records={records} updateRecords={updateRecords} />}
         {activeTab === "registry" && <RegistryPanel records={records} />}
@@ -326,20 +326,19 @@ function CFOPanel({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-8 space-y-8 animate-fade-in-up">
-      <div className="flex items-end justify-between border-b border-zinc-200 pb-6">
-        <div>
-          <h1 className="text-2xl font-medium tracking-tight text-zinc-900 flex items-center gap-2">
-            <Building2 className="text-zinc-400" size={24} />
-            CFO Intake Portal
-          </h1>
-          <p className="text-zinc-500 text-sm mt-1.5">Submit reserve statements and request auditor multi-sig.</p>
-          {!currentAccount && (
-            <p className="mt-2 text-xs font-medium text-amber-600">Connect a Sui wallet before submitting an attestation.</p>
-          )}
-        </div>
+    <div className="relative z-[1] animate-fade-in-up">
+      <div className="app-page-header">
+        <h1 className="text-2xl font-medium tracking-tight flex items-center gap-2">
+          <Building2 size={24} />
+          CFO Intake Portal
+        </h1>
+        <p className="text-sm mt-1.5">Submit reserve statements and request auditor multi-sig.</p>
+        {!currentAccount && (
+          <p className="mt-2 text-xs font-medium text-amber-300">Connect a Sui wallet before submitting an attestation.</p>
+        )}
       </div>
 
+      <div className="max-w-6xl mx-auto px-4 pb-6 md:px-8 md:pb-8 space-y-8">
       <div className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
           {[
@@ -560,6 +559,7 @@ function CFOPanel({
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -645,20 +645,19 @@ function AuditorPanel({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-8 space-y-8 animate-fade-in-up">
-      <div className="flex items-end justify-between border-b border-zinc-200 pb-6">
-        <div>
-          <h1 className="text-2xl font-medium tracking-tight text-zinc-900 flex items-center gap-2">
-            <ShieldCheck className="text-zinc-400" size={24} />
-            Auditor Desk
-          </h1>
-          <p className="text-zinc-500 text-sm mt-1.5">Review, verify cryptographic hashes, and co-sign attestations.</p>
-          {!currentAccount && (
-            <p className="mt-2 text-xs font-medium text-amber-600">Connect a Sui wallet to co-sign verified attestations.</p>
-          )}
-        </div>
+    <div className="relative z-[1] animate-fade-in-up">
+      <div className="app-page-header">
+        <h1 className="text-2xl font-medium tracking-tight flex items-center gap-2">
+          <ShieldCheck size={24} />
+          Auditor Desk
+        </h1>
+        <p className="text-sm mt-1.5">Review, verify cryptographic hashes, and co-sign attestations.</p>
+        {!currentAccount && (
+          <p className="mt-2 text-xs font-medium text-amber-300">Connect a Sui wallet to co-sign verified attestations.</p>
+        )}
       </div>
 
+      <div className="max-w-6xl mx-auto px-4 pb-6 md:px-8 md:pb-8 space-y-8">
       <div className="grid lg:grid-cols-12 gap-6 items-start">
         {/* List */}
         <div className="lg:col-span-5">
@@ -773,6 +772,7 @@ function AuditorPanel({
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -791,17 +791,16 @@ function RegistryPanel({ records }: { records: AttestationRecord[] }) {
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-8 space-y-6 animate-fade-in-up">
-      <div className="flex items-end justify-between border-b border-zinc-200 pb-6">
-        <div>
-          <h1 className="text-2xl font-medium tracking-tight text-zinc-900 flex items-center gap-2">
-            <Database className="text-zinc-400" size={24} />
-            Verified Treasury Records
-          </h1>
-          <p className="text-zinc-500 text-sm mt-1.5">Read-only cryptographic log of all attestations.</p>
-        </div>
+    <div className="relative z-[1] animate-fade-in-up">
+      <div className="app-page-header">
+        <h1 className="text-2xl font-medium tracking-tight flex items-center gap-2">
+          <Database size={24} />
+          Verified Treasury Records
+        </h1>
+        <p className="text-sm mt-1.5">Read-only cryptographic log of all attestations.</p>
       </div>
 
+      <div className="max-w-6xl mx-auto px-4 pb-6 md:px-8 md:pb-8 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-2 rounded-lg border border-zinc-200 shadow-sm">
         <div className="flex gap-1">
           {(["all", "verified", "pending"] as const).map((f) => (
@@ -862,6 +861,7 @@ function RegistryPanel({ records }: { records: AttestationRecord[] }) {
       </div>
 
       <ProofDrawer record={selectedRecord} onClose={() => setSelectedRecord(null)} />
+      </div>
     </div>
   );
 }

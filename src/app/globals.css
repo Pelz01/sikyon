@@ -29,6 +29,43 @@
   z-index: 0;
 }
 
+.app-main-watermark::before {
+  content: "";
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  background-image: url("/images/sikyon-stamp.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: contain;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-page-header {
+  background: #0a0f1e;
+  padding: 28px 40px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.app-page-header h1 {
+  color: #ffffff;
+}
+
+.app-page-header p {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.app-page-header svg {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 @theme {
   --color-background: #f8fafc; /* zinc-50 equivalent but using slate-50 */
   --color-foreground: #09090b; /* zinc-950 */

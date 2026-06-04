@@ -36,7 +36,7 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen bg-zinc-50 text-zinc-900 font-sans">
       {/* Editorial Full-Bleed Hero Section */}
-      <section className="relative h-auto md:h-[calc(100vh-64px)] md:min-h-[600px] flex flex-col justify-end pt-24 pb-16 md:pb-24 px-6 md:px-16 overflow-hidden bg-[#05070d] text-white">
+      <section className="relative h-auto md:h-[calc(100vh-64px)] md:min-h-[600px] flex flex-col justify-end pt-20 pb-16 md:pb-24 px-6 md:px-16 overflow-hidden bg-[#05070d] text-white">
         {/* Background Image Container */}
         <div 
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat" 
@@ -47,6 +47,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto w-full relative z-20 flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
           {/* Giant Bottom-Left Typography */}
           <div className="space-y-4 max-w-2xl animate-fade-in-up text-left relative z-30">
+            <p className="max-w-xl text-sm font-medium leading-relaxed text-white/65">
+              Ancient Greek city-states built treasuries at Olympia to publicly demonstrate their prosperity and legitimacy. Sikyon brings this concept on-chain, turning reserve statements into verifiable attestations secured by Walrus and Sui.
+            </p>
             <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white leading-[0.88]">
               Sikyon
             </h1>
@@ -57,7 +60,7 @@ export default function LandingPage() {
 
           {/* Bottom-Right Ivory Floating Card */}
           <div className="w-full md:max-w-sm shrink-0 animate-fade-in-up relative z-30" style={{ animationDelay: "100ms" }}>
-            <div className="bg-[#fcfdfd] border border-zinc-200 rounded-xl p-6 md:p-8 text-left space-y-6 text-zinc-900 shadow-sm">
+            <div className="border border-white/25 rounded-xl p-6 md:p-8 text-left space-y-6 text-zinc-900 shadow-sm backdrop-blur-sm" style={{ background: "rgba(255,255,255,0.92)" }}>
               <p className="text-xs text-zinc-700 leading-relaxed font-medium">
                 An enterprise-grade document attestation platform. Partition files on <span className="font-medium text-black">Walrus</span>, anchor hashes on the <span className="font-medium text-black">Sui Ledger</span>, and verify instantly via <span className="font-medium text-black">Tatum RPC</span> nodes.
               </p>
