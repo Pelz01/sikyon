@@ -28,6 +28,10 @@ export default function LandingPage() {
       answer: "Querying raw blockchain node providers directly is slow and prone to timeouts. Tatum handles transaction routing, indexes contract parameters, and offers low-latency enterprise RPC gateways, ensuring the dashboard updates in milliseconds."
     },
     {
+      question: "Why not just store a PDF in Google Drive and record a hash onchain?",
+      answer: "Sikyon doesn't just store documents. It creates a verifiable chain of custody: document stored on Walrus, hash anchored on Sui, auditor identity recorded onchain, approval signed cryptographically, and the entire record publicly verifiable by anyone with the attestation ID. No single party controls any part of that chain. That's what makes it attestation, not storage."
+    },
+    {
       question: "What happens if a document hash does not match the ledger?",
       answer: "If even a single character in the uploaded statement is modified, the computed SHA-256 hash will mismatch the Sui registry hash. The Auditor Portal instantly flags this mismatch as a 'Corrupt/Failed Verification' and rejects co-signing."
     }
@@ -47,14 +51,14 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto w-full relative z-20 flex flex-col md:flex-row justify-between items-start md:items-end gap-12">
           {/* Giant Bottom-Left Typography */}
           <div className="space-y-4 max-w-2xl animate-fade-in-up text-left relative z-30">
-            <p className="max-w-xl text-sm font-medium leading-relaxed text-white/65">
-              Ancient Greek city-states built treasuries at Olympia to publicly demonstrate their prosperity and legitimacy. Sikyon brings this concept on-chain, turning reserve statements into verifiable attestations secured by Walrus and Sui.
-            </p>
             <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white leading-[0.88]">
-              Sikyon
+              Verifiable Treasury Records
             </h1>
-            <p className="max-w-lg text-sm font-medium leading-relaxed text-white/70">
-              Public treasury attestations secured by Walrus storage, Sui smart contracts, and Tatum infrastructure.
+            <p className="max-w-xl text-base font-medium leading-relaxed text-white/75">
+              Create immutable treasury attestations, verify approvals, and maintain a permanent audit trail using Walrus and Sui.
+            </p>
+            <p className="max-w-lg text-sm font-medium leading-relaxed text-white/55">
+              Inspired by the ancient Treasury of Sikyon, where city-states publicly demonstrated their prosperity and legitimacy.
             </p>
           </div>
 
@@ -64,6 +68,16 @@ export default function LandingPage() {
               <p className="text-xs text-zinc-700 leading-relaxed font-medium">
                 An enterprise-grade document attestation platform. Partition files on <span className="font-medium text-black">Walrus</span>, anchor hashes on the <span className="font-medium text-black">Sui Ledger</span>, and verify instantly via <span className="font-medium text-black">Tatum RPC</span> nodes.
               </p>
+              <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+                Built for treasury teams, auditors, foundations, and organizations that need verifiable financial records.
+              </p>
+
+              <div className="border-y border-zinc-200 py-4">
+                <div className="text-3xl font-medium tracking-tight text-black">$89,800,000</div>
+                <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                  in treasury reserves verified on Sui mainnet
+                </p>
+              </div>
 
               <div className="space-y-2.5">
                 <Link 
