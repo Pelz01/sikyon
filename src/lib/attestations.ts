@@ -17,9 +17,11 @@ export interface AttestationRecord {
   cfoSigner?: string;
   auditorSigner?: string;
   fileSize?: string;
+  documentName?: string;
   expectedHash: string;
   uploader?: string;
   walrusJobId?: string;
+  walrusRetrievalUrl?: string;
   walrusProvider?: "tatum" | "publisher";
   walrusUploadStatus?: string;
   walrusStatus: "stored" | "failed" | "pending_configuration";
@@ -28,6 +30,7 @@ export interface AttestationRecord {
 
 export const SUIVISION_URL = "https://suivision.xyz";
 export const WALRUS_URL = "https://walruscan.com";
+export const DEFAULT_WALRUS_AGGREGATOR_URL = "https://aggregator.walrus-mainnet.walrus.space";
 export const LEGACY_ATTESTATION_STORAGE_KEY = "treasury-vault-attestations";
 export const ATTESTATION_STORAGE_KEY = "sikyon-attestations";
 export const DEFAULT_PACKAGE_ID = "0xe8a24a144e84b9f353765b4475478e7de727e5ce64b95168ff5cb6eb6b65b1df";
@@ -55,6 +58,7 @@ export function getProtocolConfig() {
 
   return {
     walrusPublisherUrl,
+    walrusAggregatorUrl: (process.env.NEXT_PUBLIC_WALRUS_AGGREGATOR_URL || DEFAULT_WALRUS_AGGREGATOR_URL).replace(/\/$/, ""),
     walrusEpochs: Number(process.env.NEXT_PUBLIC_WALRUS_EPOCHS || "5"),
     suiPackageId: process.env.NEXT_PUBLIC_PACKAGE_ID || process.env.NEXT_PUBLIC_SUI_ATTESTATION_PACKAGE_ID || DEFAULT_PACKAGE_ID,
     suiRegistryObjectId: process.env.NEXT_PUBLIC_REGISTRY_ID || process.env.NEXT_PUBLIC_SUI_REGISTRY_OBJECT_ID || DEFAULT_REGISTRY_ID,

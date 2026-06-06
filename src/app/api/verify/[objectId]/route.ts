@@ -105,7 +105,8 @@ export async function GET(
     );
   }
 
-  const isVerified = String(fields.status) === "1";
+  const statusCode = String(fields.status);
+  const status = statusCode === "1" ? "verified" : statusCode === "2" ? "rejected" : "pending";
 
   return NextResponse.json({
     objectId: data.objectId || objectId,
@@ -114,11 +115,13 @@ export async function GET(
     objectType: data.content?.type,
     previousTransaction: data.previousTransaction,
     title: fields.document_name || "Treasury attestation",
+    institution: "Not recorded on-chain",
+    fiscalPeriod: "Not recorded on-chain",
     blobId: fields.blob_id || "",
     fileHash: fields.file_hash || "",
     uploader: fields.uploader || "",
     auditor: fields.auditor || "",
-    status: isVerified ? "verified" : "pending",
+    status,
     statusCode: fields.status,
     createdAt: formatTimestamp(fields.upload_timestamp),
     verifiedAt: formatTimestamp(fields.audit_timestamp),

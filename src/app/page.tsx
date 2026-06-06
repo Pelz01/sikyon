@@ -32,6 +32,10 @@ export default function LandingPage() {
       answer: "Sikyon doesn't just store documents. It creates a verifiable chain of custody: document stored on Walrus, hash anchored on Sui, auditor identity recorded onchain, approval signed cryptographically, and the entire record publicly verifiable by anyone with the attestation ID. No single party controls any part of that chain. That's what makes it attestation, not storage."
     },
     {
+      question: "How does Sikyon prove a document is untampered?",
+      answer: "Every document uploaded to Sikyon is hashed using SHA-256 before it leaves the CFO's browser. That hash is permanently recorded on Sui mainnet via a smart contract. When anyone downloads the document from Walrus, the app recomputes the hash from the downloaded bytes and compares it to the on-chain record. If they match — and they always will unless someone altered the file — the document is cryptographically proven to be byte-for-byte identical to the original. No database. No admin. No trust required."
+    },
+    {
       question: "What happens if a document hash does not match the ledger?",
       answer: "If even a single character in the uploaded statement is modified, the computed SHA-256 hash will mismatch the Sui registry hash. The Auditor Portal instantly flags this mismatch as a 'Corrupt/Failed Verification' and rejects co-signing."
     }
@@ -55,7 +59,10 @@ export default function LandingPage() {
               Verifiable Treasury Records
             </h1>
             <p className="max-w-xl text-base font-medium leading-relaxed text-white/75">
-              Create immutable treasury attestations, verify approvals, and maintain a permanent audit trail using Walrus and Sui.
+              Create verifiable treasury records, approve them through an auditable workflow, and maintain a permanent proof trail using Walrus and Sui.
+            </p>
+            <p className="max-w-xl text-sm font-medium leading-relaxed text-white/70">
+              Every retrieved document is cryptographically verified against its original Walrus blob and Sui attestation record.
             </p>
             <p className="max-w-lg text-sm font-medium leading-relaxed text-white/55">
               Inspired by the ancient Treasury of Sikyon, where city-states publicly demonstrated their prosperity and legitimacy.
@@ -66,7 +73,7 @@ export default function LandingPage() {
           <div className="w-full md:max-w-sm shrink-0 animate-fade-in-up relative z-30" style={{ animationDelay: "100ms" }}>
             <div className="border border-white/25 rounded-xl p-6 md:p-8 text-left space-y-6 text-zinc-900 shadow-sm backdrop-blur-sm" style={{ background: "rgba(255,255,255,0.92)" }}>
               <p className="text-xs text-zinc-700 leading-relaxed font-medium">
-                An enterprise-grade document attestation platform. Partition files on <span className="font-medium text-black">Walrus</span>, anchor hashes on the <span className="font-medium text-black">Sui Ledger</span>, and verify instantly via <span className="font-medium text-black">Tatum RPC</span> nodes.
+                Store treasury records on <span className="font-medium text-black">Walrus</span>, anchor proofs on <span className="font-medium text-black">Sui</span>, and verify document integrity instantly through <span className="font-medium text-black">Tatum</span>-powered infrastructure.
               </p>
               <p className="text-xs text-zinc-600 leading-relaxed font-medium">
                 Built for treasury teams, auditors, foundations, and organizations that need verifiable financial records.

@@ -43,6 +43,8 @@ export async function publishBlobToWalrus(file: File) {
     jobId?: string;
     provider?: "tatum" | "publisher";
     status?: string;
+    downloadUrlByQuiltPatchId?: string;
+    downloadUrlByQuiltId?: string;
     walrus?: WalrusPublisherResponse;
     tatum?: unknown;
   };
@@ -57,6 +59,7 @@ export async function publishBlobToWalrus(file: File) {
     jobId: payload.jobId || "",
     provider: payload.provider || "publisher",
     status: payload.status || "",
+    retrievalUrl: payload.downloadUrlByQuiltPatchId || payload.downloadUrlByQuiltId || "",
     payload: payload.walrus || payload,
   };
 }

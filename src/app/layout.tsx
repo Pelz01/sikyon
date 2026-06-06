@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import SuiProviders from "@/components/SuiProviders";
 
 const instrumentSans = Instrument_Sans({ 
   subsets: ["latin"],
@@ -26,10 +27,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${instrumentSans.variable} ${jetbrainsMono.variable} font-sans antialiased selection:bg-zinc-200 selection:text-black bg-zinc-50`}>
-        <Navbar />
-        <main className="pt-16 min-h-screen">
-          {children}
-        </main>
+        <SuiProviders>
+          <Navbar />
+          <main className="pt-16 min-h-screen">
+            {children}
+          </main>
+        </SuiProviders>
       </body>
     </html>
   );

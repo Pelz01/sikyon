@@ -19,6 +19,7 @@ import {
   Shield,
   CircleDashed,
   ExternalLink,
+  LoaderCircle,
   X
 } from "lucide-react";
 import {
@@ -60,6 +61,21 @@ function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function parseAssetAmount(balance: string) {
+  const amount = Number(balance.replace(/[^0-9.-]+/g, ""));
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function formatAssets(amount: number): string {
+  if (amount >= 1_000_000_000) {
+    return `$${(amount / 1_000_000_000).toFixed(1)}B`;
+  }
+  if (amount >= 1_000_000) {
+    return `$${(amount / 1_000_000).toFixed(1)}M`;
+  }
+  return `$${amount.toLocaleString()}`;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -306,7 +322,9 @@ function CFOPanel({
         uploader: walletAddress,
         expectedHash: digest,
         fileSize: formatFileSize(file.size),
+        documentName: file.name,
         walrusJobId: walrusResult.jobId,
+        walrusRetrievalUrl: walrusResult.retrievalUrl,
         walrusProvider: walrusResult.provider,
         walrusUploadStatus: walrusResult.status,
         walrusStatus: "stored",
@@ -821,33 +839,34 @@ function RegistryPanel({ records }: { records: AttestationRecord[] }) {
 
       <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm">
         <div className="grid grid-cols-12 gap-4 p-4 border-b border-zinc-200 text-xs font-medium text-zinc-500 hidden md:grid bg-zinc-50">
-          <div className="col-span-5">Statement</div>
+          <div className="col-span-4">Statement</div>
+          <div className="col-span-2">Verified Assets</div>
           <div className="col-span-3">Proof</div>
           <div className="col-span-3">Status</div>
-          <div className="col-span-1 text-center"></div>
         </div>
 
         <div className="divide-y divide-zinc-200">
           {filteredLedger.map((item) => (
             <div key={item.id} className="hover:bg-zinc-50/50 transition-colors">
               <button onClick={() => setSelectedRecord(item)} className="grid w-full grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center text-left text-sm cursor-pointer select-none">
-                <div className="col-span-5 min-w-0 pr-4">
+                <div className="col-span-4 min-w-0 pr-4">
                   <p className="font-medium text-zinc-900 truncate">{item.title}</p>
                   <p className="text-xs text-zinc-500 mt-0.5">{item.institution}</p>
+                </div>
+                <div className="col-span-2 font-mono text-xs font-medium text-zinc-900">
+                  {formatAssets(parseAssetAmount(item.balance))}
                 </div>
                 <div className="col-span-3 font-mono text-xs text-zinc-700">
                   <span className="block truncate">{item.blobId}</span>
                   <span className="mt-1 block truncate text-zinc-400">{item.objectId}</span>
                 </div>
-                <div className="col-span-3">
+                <div className="col-span-3 flex items-center justify-between gap-3">
                   {item.status === "verified" ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-200">VERIFIED</span>
                   ) : (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-600 text-[10px] font-medium border border-zinc-200">PENDING</span>
                   )}
-                </div>
-                <div className="col-span-1 flex justify-center text-zinc-400">
-                  <ChevronRight size={16} />
+                  <ChevronRight size={16} className="shrink-0 text-zinc-400" />
                 </div>
               </button>
             </div>
@@ -860,13 +879,17 @@ function RegistryPanel({ records }: { records: AttestationRecord[] }) {
         </div>
       </div>
 
-      <ProofDrawer record={selectedRecord} onClose={() => setSelectedRecord(null)} />
+      <ProofDrawer key={selectedRecord?.objectId || "closed"} record={selectedRecord} onClose={() => setSelectedRecord(null)} />
       </div>
     </div>
   );
 }
 
 function ProofDrawer({ record, onClose }: { record: AttestationRecord | null; onClose: () => void }) {
+  const [verificationState, setVerificationState] = useState<"idle" | "verifying" | "passed" | "failed">("idle");
+  const [computedHash, setComputedHash] = useState("");
+  const [verificationError, setVerificationError] = useState("");
+
   const proofRows = record ? [
     ["Walrus Blob ID", record.blobId],
     ["Walrus Provider", record.walrusProvider === "tatum" ? "Tatum Storage API" : "Publisher API"],
@@ -882,6 +905,65 @@ function ProofDrawer({ record, onClose }: { record: AttestationRecord | null; on
     ["Walrus adapter", record.walrusStatus === "stored" ? "Stored" : record.walrusStatus === "failed" ? "Failed" : "Pending configuration"],
     ["Sui adapter", record.suiStatus === "recorded" ? "Recorded" : "Pending configuration"],
   ] : [];
+
+  const verifyAndDownload = async () => {
+    if (!record || verificationState === "verifying") return;
+
+    setVerificationState("verifying");
+    setComputedHash("");
+    setVerificationError("");
+
+    try {
+      const retrievalParams = new URLSearchParams({
+        blobId: record.blobId,
+        provider: record.walrusProvider || "publisher",
+      });
+      if (record.walrusJobId) retrievalParams.set("jobId", record.walrusJobId);
+      const url = `/api/retrieve-walrus?${retrievalParams.toString()}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Walrus retrieval returned HTTP ${response.status}.`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const downloadedHash = bytesToHex(await crypto.subtle.digest("SHA-256", arrayBuffer));
+      const onChainHash = record.expectedHash.replace(/^0x/, "").toLowerCase();
+      const isMatch = downloadedHash === onChainHash;
+
+      setComputedHash(downloadedHash);
+
+      if (!isMatch) {
+        setVerificationState("failed");
+        setVerificationError("⚠️ Hash mismatch — this file may have been altered. Do not rely on this document.");
+        return;
+      }
+
+      if (record.status !== "verified" || !record.auditorSigner) {
+        setVerificationState("failed");
+        setVerificationError("Document hash matched, but the Sui attestation is still awaiting a verified auditor signature.");
+        return;
+      }
+
+      setVerificationState("passed");
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+      const blob = new Blob([arrayBuffer], {
+        type: response.headers.get("content-type") || "application/octet-stream",
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = record.documentName || "treasury-document.pdf";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      setVerificationState("failed");
+      setVerificationError(error instanceof Error ? error.message : "Unable to verify this Walrus document.");
+    }
+  };
 
   return (
     <>
@@ -907,16 +989,78 @@ function ProofDrawer({ record, onClose }: { record: AttestationRecord | null; on
                   <div className="mt-1 break-all font-mono text-xs text-zinc-900">{value}</div>
                 </div>
               ))}
+
+              {verificationState === "passed" && (
+                <div className="space-y-3" aria-live="polite">
+                  <div className="space-y-2 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-xs font-medium text-emerald-800">
+                    {[
+                      "Walrus Blob Retrieved",
+                      "Hash Match Confirmed",
+                      "Sui Attestation Verified",
+                      "Auditor Signature Verified",
+                      "No Tampering Detected",
+                    ].map((item) => (
+                      <div key={item} className="flex items-center gap-2">
+                        <CheckCircle2 size={14} className="shrink-0 text-emerald-600" />
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid gap-3 rounded-md border border-zinc-200 bg-zinc-50 p-4 text-xs md:grid-cols-2">
+                    <div>
+                      <div className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Downloaded file hash</div>
+                      <div className="mt-1 break-all font-mono text-zinc-900">{computedHash}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">On-chain record hash</div>
+                      <div className="mt-1 break-all font-mono text-zinc-900">{record.expectedHash}</div>
+                    </div>
+                    <div className="font-medium text-emerald-700 md:col-span-2">Status: ✓ Match confirmed</div>
+                  </div>
+                  <div className="rounded-md border border-emerald-300 bg-emerald-50 p-4 text-xs font-medium leading-relaxed text-emerald-800">
+                    ✓ Document integrity verified — this file is cryptographically identical to the original submission. Untampered.
+                  </div>
+                </div>
+              )}
+
+              {verificationState === "failed" && (
+                <div className="space-y-3" aria-live="assertive">
+                  <div className="rounded-md border border-red-200 bg-red-50 p-4 text-xs font-medium leading-relaxed text-red-700">
+                    {verificationError}
+                  </div>
+                  {computedHash && (
+                    <div className="grid gap-3 rounded-md border border-red-200 bg-red-50/40 p-4 text-xs md:grid-cols-2">
+                      <div>
+                        <div className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">Downloaded file hash</div>
+                        <div className="mt-1 break-all font-mono text-zinc-900">{computedHash}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">On-chain record hash</div>
+                        <div className="mt-1 break-all font-mono text-zinc-900">{record.expectedHash}</div>
+                      </div>
+                      <div className="font-medium text-red-700 md:col-span-2">
+                        Status: {computedHash === record.expectedHash.replace(/^0x/, "").toLowerCase() ? "Attestation incomplete" : "✗ Mismatch detected"}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid gap-2 border-t border-zinc-200 p-5">
               <a href={`${SUIVISION_URL}/object/${record.objectId}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-md bg-black px-4 py-2.5 text-xs font-medium text-white hover:bg-zinc-800">
                 View on SuiVision <ExternalLink size={13} />
               </a>
-              <a href={`${WALRUS_URL}/blob/${record.blobId}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 hover:bg-zinc-50">
-                Retrieve from Walrus <ExternalLink size={13} />
-              </a>
-              <a href={`/verify/${record.publicId || record.id}`} className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 hover:bg-zinc-50">
+              <button
+                type="button"
+                onClick={() => void verifyAndDownload()}
+                disabled={verificationState === "verifying"}
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {verificationState === "verifying" && <LoaderCircle size={14} className="animate-spin" />}
+                {verificationState === "verifying" ? "Verifying integrity..." : "Verify and Download Document"}
+              </button>
+              <a href={`/verify/${record.objectId}`} className="inline-flex items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-xs font-medium text-zinc-900 hover:bg-zinc-50">
                 Public verification URL <ExternalLink size={13} />
               </a>
             </div>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import WalletConnectControl from "@/components/WalletConnectControl";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -33,9 +34,7 @@ export default function Navbar() {
           )}
 
           {isInApp ? (
-            <div className="px-4 py-1.5 rounded-full bg-white border border-zinc-200 text-[11px] font-medium text-zinc-500">
-              Wallet in app
-            </div>
+            <WalletConnectControl />
           ) : (
             <Link
               href="/app"
