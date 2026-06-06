@@ -58,13 +58,7 @@ export default function LandingPage() {
             <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white leading-[0.88]">
               Verifiable Treasury Records
             </h1>
-            <p className="max-w-xl text-base font-medium leading-relaxed text-white/75">
-              Create verifiable treasury records, approve them through an auditable workflow, and maintain a permanent proof trail using Walrus and Sui.
-            </p>
-            <p className="max-w-xl text-sm font-medium leading-relaxed text-white/70">
-              Every retrieved document is cryptographically verified against its original Walrus blob and Sui attestation record.
-            </p>
-            <p className="max-w-lg text-sm font-medium leading-relaxed text-white/55">
+            <p className="max-w-lg text-sm font-medium leading-relaxed text-white/60">
               Inspired by the ancient Treasury of Sikyon, where city-states publicly demonstrated their prosperity and legitimacy.
             </p>
           </div>
@@ -74,6 +68,12 @@ export default function LandingPage() {
             <div className="border border-white/25 rounded-xl p-6 md:p-8 text-left space-y-6 text-zinc-900 shadow-sm backdrop-blur-sm" style={{ background: "rgba(255,255,255,0.92)" }}>
               <p className="text-xs text-zinc-700 leading-relaxed font-medium">
                 Store treasury records on <span className="font-medium text-black">Walrus</span>, anchor proofs on <span className="font-medium text-black">Sui</span>, and verify document integrity instantly through <span className="font-medium text-black">Tatum</span>-powered infrastructure.
+              </p>
+              <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+                Create verifiable treasury records, approve them through an auditable workflow, and maintain a permanent proof trail using Walrus and Sui.
+              </p>
+              <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+                Every retrieved document is cryptographically verified against its original Walrus blob and Sui attestation record.
               </p>
               <p className="text-xs text-zinc-600 leading-relaxed font-medium">
                 Built for treasury teams, auditors, foundations, and organizations that need verifiable financial records.

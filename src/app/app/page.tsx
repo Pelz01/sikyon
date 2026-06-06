@@ -927,7 +927,11 @@ function ProofDrawer({ record, onClose }: { record: AttestationRecord | null; on
       }
 
       const arrayBuffer = await response.arrayBuffer();
-      const downloadedHash = bytesToHex(await crypto.subtle.digest("SHA-256", arrayBuffer));
+      const actualHash = bytesToHex(await crypto.subtle.digest("SHA-256", arrayBuffer));
+      const tamperTestEnabled = window.localStorage.getItem("sikyon_test_tamper") === "true";
+      const downloadedHash = tamperTestEnabled
+        ? `${actualHash.slice(0, -1)}${actualHash.endsWith("0") ? "1" : "0"}`
+        : actualHash;
       const onChainHash = record.expectedHash.replace(/^0x/, "").toLowerCase();
       const isMatch = downloadedHash === onChainHash;
 
